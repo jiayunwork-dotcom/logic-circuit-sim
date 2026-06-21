@@ -12,10 +12,10 @@ import { GateType } from '../../models/circuit.models';
         <h4>输入/输出</h4>
         <div class="tool-item" draggable="true" (dragstart)="onDragStart($event, 'INPUT')">
           <div class="gate-icon input-icon">
-            <div class="switch-body"></div>
-            <div class="switch-label">
-              </div>
+            <div class="switch-body">
+              <div class="switch-thumb"></div>
             </div>
+          </div>
           <span>开关输入</span>
         </div>
         <div class="tool-item" draggable="true" (dragstart)="onDragStart($event, 'OUTPUT')">
@@ -31,25 +31,25 @@ import { GateType } from '../../models/circuit.models';
         <div class="tool-item" draggable="true" (dragstart)="onDragStart($event, 'AND')">
           <div class="gate-icon and-gate">
             <svg viewBox="0 0 40 30">
-            <path d="M 5 5 L 20 5 Q 35 15 Q 20 25 L 5 25 Z" fill="none" stroke="currentColor" stroke-width="2"/>
-          </svg>
+              <path d="M 5 5 L 20 5 Q 35 15 20 25 L 5 25 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
           </div>
           <span>AND 门</span>
         </div>
         <div class="tool-item" draggable="true" (dragstart)="onDragStart($event, 'OR')">
           <div class="gate-icon or-gate">
             <svg viewBox="0 0 40 30">
-            <path d="M 5 5 Q 15 5 Q 35 15 Q 15 25 Q 5 25 Q 10 15 Q 5 5 Z" fill="none" stroke="currentColor" stroke-width="2"/>
-          </svg>
+              <path d="M 5 5 Q 15 5 35 15 Q 15 25 5 25 Q 10 15 5 5 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
           </div>
           <span>OR 门</span>
         </div>
         <div class="tool-item" draggable="true" (dragstart)="onDragStart($event, 'NOT')">
           <div class="gate-icon not-gate">
             <svg viewBox="0 0 40 30">
-            <polygon points="5,5 30,15 5,25" fill="none" stroke="currentColor" stroke-width="2"/>
-            <circle cx="33" cy="15" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
-          </svg>
+              <polygon points="5,5 30,15 5,25" fill="none" stroke="currentColor" stroke-width="2"/>
+              <circle cx="33" cy="15" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
           </div>
           <span>NOT 门</span>
         </div>
@@ -60,37 +60,37 @@ import { GateType } from '../../models/circuit.models';
         <div class="tool-item" draggable="true" (dragstart)="onDragStart($event, 'NAND')">
           <div class="gate-icon nand-gate">
             <svg viewBox="0 0 44 30">
-            <path d="M 5 5 L 20 5 Q 31 15 Q 20 25 L 5 25 Z" fill="none" stroke="currentColor" stroke-width="2"/>
-            <circle cx="35" cy="15" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
-          </svg>
+              <path d="M 5 5 L 20 5 Q 31 15 20 25 L 5 25 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+              <circle cx="35" cy="15" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
           </div>
           <span>NAND 门</span>
         </div>
         <div class="tool-item" draggable="true" (dragstart)="onDragStart($event, 'NOR')">
           <div class="gate-icon nor-gate">
             <svg viewBox="0 0 44 30">
-            <path d="M 5 5 Q 15 5 Q 31 15 Q 15 25 Q 5 25 Q 10 15 Q 5 5 Z" fill="none" stroke="currentColor" stroke-width="2"/>
-            <circle cx="35" cy="15" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
-          </svg>
+              <path d="M 5 5 Q 15 5 31 15 Q 15 25 5 25 Q 10 15 5 5 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+              <circle cx="35" cy="15" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
           </div>
           <span>NOR 门</span>
         </div>
         <div class="tool-item" draggable="true" (dragstart)="onDragStart($event, 'XOR')">
           <div class="gate-icon xor-gate">
             <svg viewBox="0 0 40 30">
-            <path d="M 8 5 Q 18 5 Q 35 15 Q 18 25 Q 8 25 Q 13 15 Q 8 5 Z" fill="none" stroke="currentColor" stroke-width="2"/>
-            <path d="M 5 5 Q 10 15 Q 5 25" fill="none" stroke="currentColor" stroke-width="2"/>
-          </svg>
+              <path d="M 8 5 Q 18 5 35 15 Q 18 25 8 25 Q 13 15 8 5 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+              <path d="M 5 5 Q 10 15 5 25" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
           </div>
           <span>XOR 门</span>
         </div>
         <div class="tool-item" draggable="true" (dragstart)="onDragStart($event, 'XNOR')">
           <div class="gate-icon xnor-gate">
             <svg viewBox="0 0 44 30">
-            <path d="M 8 5 Q 18 5 Q 31 15 Q 18 25 Q 8 25 Q 13 15 Q 8 5 Z" fill="none" stroke="currentColor" stroke-width="2"/>
-            <path d="M 5 5 Q 10 15 Q 5 25" fill="none" stroke="currentColor" stroke-width="2"/>
-            <circle cx="35" cy="15" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
-          </svg>
+              <path d="M 8 5 Q 18 5 31 15 Q 18 25 8 25 Q 13 15 8 5 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+              <path d="M 5 5 Q 10 15 5 25" fill="none" stroke="currentColor" stroke-width="2"/>
+              <circle cx="35" cy="15" r="2" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
           </div>
           <span>XNOR 门</span>
         </div>
@@ -157,6 +157,7 @@ import { GateType } from '../../models/circuit.models';
       align-items: center;
       justify-content: center;
       color: #333;
+      flex-shrink: 0;
     }
 
     .gate-icon svg {
@@ -164,21 +165,18 @@ import { GateType } from '../../models/circuit.models';
       height: 100%;
     }
 
-    .input-icon, .output-icon {
-      position: relative;
-    }
-
     .input-icon .switch-body {
-      width: 24px;
-      height: 12px;
+      width: 30px;
+      height: 16px;
       background: #ccc;
-      border-radius: 6px;
+      border-radius: 8px;
       position: relative;
+      border: 1px solid #999;
     }
 
-    .input-icon .switch {
-      width: 10px;
-      height: 10px;
+    .input-icon .switch-thumb {
+      width: 12px;
+      height: 12px;
       background: #fff;
       border-radius: 50%;
       position: absolute;
@@ -189,8 +187,8 @@ import { GateType } from '../../models/circuit.models';
     }
 
     .output-icon .lamp {
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       background: #ddd;
       border: 2px solid #999;

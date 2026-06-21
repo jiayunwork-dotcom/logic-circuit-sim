@@ -26,18 +26,18 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
       <svg class="canvas-svg" [style.transform]="getTransform()">
         <defs>
           <pattern id="grid-small" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e0e0e0" stroke-width="0.5"/>
+            <path d="M 20 0 L 0 0 L 0 20" fill="none" stroke="#e0e0e0" stroke-width="0.5"/>
           </pattern>
           <pattern id="grid-large" width="100" height="100" patternUnits="userSpaceOnUse">
             <rect width="100" height="100" fill="url(#grid-small)"/>
-            <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#ccc" stroke-width="1"/>
+            <path d="M 100 0 L 0 0 L 0 100" fill="none" stroke="#ccc" stroke-width="1"/>
           </pattern>
         </defs>
         <rect width="5000" height="5000" x="-2500" y="-2500" fill="url(#grid-large)"/>
 
-        <svg:g class="wires-layer">
-          <svg:g *ngFor="let wire of wires" (mousedown)="onWireMouseDown($event, wire)">
-            <svg:polyline
+        <g class="wires-layer">
+          <g *ngFor="let wire of wires" (mousedown)="onWireMouseDown($event, wire)">
+            <polyline
               [attr.points]="getWirePoints(wire)"
               [attr.stroke]="getWireColor(wire.value)"
               [attr.stroke-width]="wire.value === null ? 2 : 3"
@@ -46,29 +46,29 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
               class="wire"
               [class.selected]="selectedWireIds.includes(wire.id)"
             />
-          </svg:g>
-        </svg:g>
+          </g>
+        </g>
 
-        <svg:g *ngIf="isDrawingWire" class="temp-wire">
-          <svg:polyline
+        <g *ngIf="isDrawingWire" class="temp-wire">
+          <polyline
             [attr.points]="getTempWirePoints()"
             stroke="#666"
             stroke-width="2"
             stroke-dasharray="5,5"
             fill="none"
           />
-        </svg:g>
+        </g>
 
-        <svg:g class="nodes-layer">
-          <svg:g
-            *ngFor="let node of nodes"
-            [attr.transform]="'translate(' + node.position.x + ',' + node.position.y + ')'"
-            class="node-group"
-            [class.selected]="selectedNodeIds.includes(node.id)"
-            (mousedown)="onNodeMouseDown($event, node)"
-          >
+        <g class="nodes-layer">
+          <ng-container *ngFor="let node of nodes">
+            <g *ngIf="node && node.position"
+              [attr.transform]="getNodeTransform(node)"
+              class="node-group"
+              [class.selected]="selectedNodeIds.includes(node.id)"
+              (mousedown)="onNodeMouseDown($event, node)"
+            >
             <ng-container [ngSwitch]="node.type">
-              <svg:g *ngSwitchCase="'INPUT'" class="input-node">
+              <g *ngSwitchCase="'INPUT'" class="input-node">
                 <rect
                   [attr.width]="getNodeWidth(node.type)"
                   [attr.height]="getNodeHeight(node.type)"
@@ -106,9 +106,9 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
                   class="port output-port"
                   (mousedown)="onPortMouseDown($event, node, node.outputPorts[0])"
                 />
-              </svg:g>
+              </g>
 
-              <svg:g *ngSwitchCase="'OUTPUT'" class="output-node">
+              <g *ngSwitchCase="'OUTPUT'" class="output-node">
                 <circle
                   [attr.cx]="getNodeWidth(node.type) / 2"
                   [attr.cy]="getNodeHeight(node.type) / 2"
@@ -147,27 +147,27 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
                   class="port input-port"
                   (mousedown)="onPortMouseDown($event, node, node.inputPorts[0])"
                 />
-              </svg:g>
+              </g>
 
-              <svg:g *ngSwitchDefault class="gate-node">
+              <g *ngSwitchDefault class="gate-node">
                 <ng-container [ngSwitch]="node.type">
-                  <svg:g *ngSwitchCase="'AND'">
+                  <g *ngSwitchCase="'AND'">
                     <path
                       [attr.d]="getANDGatePath(node)"
                       fill="#fff"
                       stroke="#333"
                       stroke-width="2"
                     />
-                  </svg:g>
-                  <svg:g *ngSwitchCase="'OR'">
+                  </g>
+                  <g *ngSwitchCase="'OR'">
                     <path
                       [attr.d]="getORGatePath(node)"
                       fill="#fff"
                       stroke="#333"
                       stroke-width="2"
                     />
-                  </svg:g>
-                  <svg:g *ngSwitchCase="'NOT'">
+                  </g>
+                  <g *ngSwitchCase="'NOT'">
                     <polygon
                       [attr.points]="getNOTGatePoints(node)"
                       fill="#fff"
@@ -182,8 +182,8 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
                       stroke="#333"
                       stroke-width="2"
                     />
-                  </svg:g>
-                  <svg:g *ngSwitchCase="'NAND'">
+                  </g>
+                  <g *ngSwitchCase="'NAND'">
                     <path
                       [attr.d]="getNANDGatePath(node)"
                       fill="#fff"
@@ -198,8 +198,8 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
                       stroke="#333"
                       stroke-width="2"
                     />
-                  </svg:g>
-                  <svg:g *ngSwitchCase="'NOR'">
+                  </g>
+                  <g *ngSwitchCase="'NOR'">
                     <path
                       [attr.d]="getNORGatePath(node)"
                       fill="#fff"
@@ -214,8 +214,8 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
                       stroke="#333"
                       stroke-width="2"
                     />
-                  </svg:g>
-                  <svg:g *ngSwitchCase="'XOR'">
+                  </g>
+                  <g *ngSwitchCase="'XOR'">
                     <path
                       [attr.d]="getXORGatePath(node)"
                       fill="#fff"
@@ -228,8 +228,8 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
                       stroke="#333"
                       stroke-width="2"
                     />
-                  </svg:g>
-                  <svg:g *ngSwitchCase="'XNOR'">
+                  </g>
+                  <g *ngSwitchCase="'XNOR'">
                     <path
                       [attr.d]="getXORGatePath(node)"
                       fill="#fff"
@@ -250,7 +250,7 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
                       stroke="#333"
                       stroke-width="2"
                     />
-                  </svg:g>
+                  </g>
                 </ng-container>
 
                 <text
@@ -265,7 +265,7 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
                 <circle
                   *ngFor="let port of node.inputPorts"
                   cx="3"
-                  [attr.cy]="port.position.y"
+                  [attr.cy]="getPortY(port)"
                   r="5"
                   fill="#fff"
                   stroke="#333"
@@ -277,7 +277,7 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
                 <circle
                   *ngFor="let port of node.outputPorts"
                   [attr.cx]="getNodeWidth(node.type) - 3"
-                  [attr.cy]="port.position.y"
+                  [attr.cy]="getPortY(port)"
                   r="5"
                   fill="#fff"
                   stroke="#333"
@@ -285,28 +285,33 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
                   class="port output-port"
                   (mousedown)="onPortMouseDown($event, node, port)"
                 />
-              </svg:g>
+              </g>
             </ng-container>
-          </svg:g>
-        </svg:g>
+          </g>
+        </ng-container>
+        </g>
       </svg>
     </div>
   `,
   styles: [
     `
     .canvas-container {
-      flex: 1;
       position: relative;
       overflow: hidden;
       background: #fafafa;
       cursor: default;
+      width: 100%;
+      height: 100%;
     }
 
     .canvas-svg {
       position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       transform-origin: 0 0;
+      display: block;
     }
 
     .node-group {
@@ -349,18 +354,6 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
     }
 
     .temp-wire {
-      pointer-events: none;
-    }
-
-    p {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      color: #666;
-      font-size: 12px;
-      background: rgba(255,255,255,0.8);
-      padding: 4px 8px;
-      border-radius: 4px;
       pointer-events: none;
     }
     `,
@@ -419,7 +412,11 @@ export class CanvasComponent implements OnInit, OnDestroy {
   }
 
   getTransform(): string {
-    return `translate(${this.viewState.offsetX}px, ${this.viewState.offsetY}px) scale(${this.viewState.scale})`;
+    if (!this.viewState) return 'translate(0px,0px) scale(1)';
+    const ox = this.viewState.offsetX ?? 0;
+    const oy = this.viewState.offsetY ?? 0;
+    const s = this.viewState.scale ?? 1;
+    return `translate(${ox}px, ${oy}px) scale(${s})`;
   }
 
   getNodeWidth(type: GateType): number {
@@ -430,8 +427,24 @@ export class CanvasComponent implements OnInit, OnDestroy {
     return this.circuitService.getNodeHeight(type);
   }
 
+  getNodeTransform(node: CircuitNode): string {
+    if (!node || !node.position) return 'translate(0,0)';
+    const x = node.position.x ?? 0;
+    const y = node.position.y ?? 0;
+    return `translate(${x},${y})`;
+  }
+
+  getPortY(port: Port): number {
+    if (!port || !port.position) return 0;
+    return port.position.y ?? 0;
+  }
+
   getWirePoints(wire: Wire): string {
-    return wire.points.map((p) => `${p.x},${p.y}`).join(' ');
+    if (!wire || !wire.points) return '';
+    return wire.points
+      .filter((p) => p && typeof p.x === 'number' && typeof p.y === 'number')
+      .map((p) => `${p.x},${p.y}`)
+      .join(' ');
   }
 
   getWireColor(value: SignalValue): string {
@@ -445,36 +458,42 @@ export class CanvasComponent implements OnInit, OnDestroy {
   }
 
   getANDGatePath(node: CircuitNode): string {
+    if (!node) return '';
     const w = this.getNodeWidth(node.type);
     const h = this.getNodeHeight(node.type);
     return `M 0 0 L ${w * 0.5} 0 Q ${w} ${h / 2} ${w * 0.5} ${h} L 0 ${h} Z`;
   }
 
   getORGatePath(node: CircuitNode): string {
+    if (!node) return '';
     const w = this.getNodeWidth(node.type);
     const h = this.getNodeHeight(node.type);
     return `M 0 0 Q ${w * 0.3} 0 ${w} ${h / 2} Q ${w * 0.3} ${h} 0 ${h} Q ${w * 0.15} ${h / 2} 0 0 Z`;
   }
 
   getNOTGatePoints(node: CircuitNode): string {
+    if (!node) return '';
     const w = this.getNodeWidth(node.type) - 10;
     const h = this.getNodeHeight(node.type);
     return `0,0 ${w},${h / 2} 0,${h}`;
   }
 
   getNANDGatePath(node: CircuitNode): string {
+    if (!node) return '';
     const w = this.getNodeWidth(node.type) - 10;
     const h = this.getNodeHeight(node.type);
     return `M 0 0 L ${w * 0.5} 0 Q ${w} ${h / 2} ${w * 0.5} ${h} L 0 ${h} Z`;
   }
 
   getNORGatePath(node: CircuitNode): string {
+    if (!node) return '';
     const w = this.getNodeWidth(node.type) - 10;
     const h = this.getNodeHeight(node.type);
     return `M 0 0 Q ${w * 0.3} 0 ${w} ${h / 2} Q ${w * 0.3} ${h} 0 ${h} Q ${w * 0.15} ${h / 2} 0 0 Z`;
   }
 
   getXORGatePath(node: CircuitNode): string {
+    if (!node) return '';
     const w = this.getNodeWidth(node.type);
     const h = this.getNodeHeight(node.type);
     const offset = 8;
@@ -482,6 +501,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
   }
 
   getXORBackPath(node: CircuitNode): string {
+    if (!node) return '';
     const h = this.getNodeHeight(node.type);
     return `M 0 0 Q 4 ${h / 2} 0 ${h}`;
   }
@@ -506,6 +526,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
 
   onWheel(event: WheelEvent): void {
     event.preventDefault();
+    if (!this.canvasContainer || !this.canvasContainer.nativeElement) return;
     const delta = event.deltaY > 0 ? 0.9 : 1.1;
     const newScale = Math.max(0.2, Math.min(3, this.viewState.scale * delta));
 
@@ -513,8 +534,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
 
-    const worldX = (mouseX - this.viewState.offsetX) / this.viewState.scale;
-    const worldY = (mouseY - this.viewState.offsetY) / this.viewState.scale;
+    const worldX = (mouseX - (this.viewState.offsetX ?? 0)) / (this.viewState.scale ?? 1);
+    const worldY = (mouseY - (this.viewState.offsetY ?? 0)) / (this.viewState.scale ?? 1);
 
     this.viewState.scale = newScale;
     this.viewState.offsetX = mouseX - worldX * newScale;
@@ -592,8 +613,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
       this.draggingNodeId = node.id;
       const pos = this.screenToWorld(event.clientX, event.clientY);
       this.dragNodeStartPos = {
-        x: pos.x - node.position.x,
-        y: pos.y - node.position.y,
+        x: pos.x - (node?.position?.x ?? 0),
+        y: pos.y - (node?.position?.y ?? 0),
       };
       this.circuitService.selectNode(node.id, event.shiftKey);
     }
@@ -607,8 +628,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
       this.wireStartNode = node;
       this.wireStartPort = port;
       this.wireEndPos = {
-        x: node.position.x + port.position.x,
-        y: node.position.y + port.position.y,
+        x: (node?.position?.x ?? 0) + (port?.position?.x ?? 0),
+        y: (node?.position?.y ?? 0) + (port?.position?.y ?? 0),
       };
     } else if (port.type === 'input' && this.isDrawingWire) {
       const existingWire = this.wires.find(
@@ -643,8 +664,10 @@ export class CanvasComponent implements OnInit, OnDestroy {
     let connected = false;
     for (const node of this.nodes) {
       if (node.id === this.wireStartNode.id) continue;
+      if (!node || !node.position) continue;
 
       for (const port of node.inputPorts) {
+        if (!port || !port.position) continue;
         const portX = node.position.x + port.position.x;
         const portY = node.position.y + port.position.y;
         const dist = Math.sqrt(
@@ -678,6 +701,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
 
   getTempWirePoints(): string {
     if (!this.wireStartNode || !this.wireStartPort) return '';
+    if (!this.wireStartNode.position || !this.wireStartPort.position) return '';
 
     const startX = this.wireStartNode.position.x + this.wireStartPort.position.x;
     const startY = this.wireStartNode.position.y + this.wireStartPort.position.y;
@@ -690,10 +714,13 @@ export class CanvasComponent implements OnInit, OnDestroy {
   }
 
   private screenToWorld(screenX: number, screenY: number): { x: number; y: number } {
+    if (!this.canvasContainer || !this.canvasContainer.nativeElement) {
+      return { x: 0, y: 0 };
+    }
     const rect = this.canvasContainer.nativeElement.getBoundingClientRect();
     return {
-      x: (screenX - rect.left - this.viewState.offsetX) / this.viewState.scale,
-      y: (screenY - rect.top - this.viewState.offsetY) / this.viewState.scale,
+      x: (screenX - rect.left - (this.viewState?.offsetX ?? 0)) / (this.viewState?.scale ?? 1),
+      y: (screenY - rect.top - (this.viewState?.offsetY ?? 0)) / (this.viewState?.scale ?? 1),
     };
   }
 

@@ -113,7 +113,10 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
     .app-container {
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      height: 100%;
+      min-height: 100%;
+      max-height: 100%;
+      width: 100%;
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
@@ -121,38 +124,47 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
     .app-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
+      align-items: flex-start;
+      padding: 8px 16px;
       background: #1976D2;
       color: #fff;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      flex-wrap: wrap;
+      gap: 8px;
+      flex-shrink: 0;
+      z-index: 10;
     }
 
     .header-left h1 {
       margin: 0;
-      font-size: 20px;
+      font-size: 16px;
+      line-height: 1.2;
     }
 
     .header-left .subtitle {
-      font-size: 12px;
+      font-size: 11px;
       opacity: 0.8;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
+      flex-wrap: wrap;
+      max-width: 80%;
     }
 
     .btn {
-      padding: 8px 14px;
+      padding: 5px 10px;
       border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 4px;
+      border-radius: 3px;
       background: rgba(255,255,255,0.15);
       color: #fff;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 11px;
       transition: background 0.2s;
+      white-space: nowrap;
+      line-height: 1.4;
     }
 
     .btn:hover:not(:disabled) {
@@ -194,20 +206,40 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
 
     .divider {
       width: 1px;
-      height: 24px;
+      height: 18px;
       background: rgba(255,255,255,0.3);
-      margin: 0 4px;
+      margin: 0 2px;
     }
 
     .app-body {
-      flex: 1;
+      flex: 1 1 auto;
       display: flex;
       overflow: hidden;
+      min-height: 0;
+      height: 0;
+      width: 100%;
+    }
+
+    .app-body app-toolbar {
+      flex: 0 0 200px;
+      width: 200px;
+      max-width: 200px;
+      min-width: 200px;
+      display: block;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .app-body app-canvas {
+      flex: 1 1 auto;
+      display: block;
+      height: 100%;
+      min-width: 0;
     }
 
     .feedback-warning {
       position: fixed;
-      top: 70px;
+      top: 80px;
       left: 50%;
       transform: translateX(-50%);
       background: #f44336;

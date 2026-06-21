@@ -231,10 +231,12 @@ export class CircuitService {
     const fromNode = nodes.find((n) => n.id === fromNodeId);
     const toNode = nodes.find((n) => n.id === toNodeId);
     if (!fromNode || !toNode) return [];
+    if (!fromNode.position || !toNode.position) return [];
 
     const fromPort = fromNode.outputPorts.find((p) => p.id === fromPortId);
     const toPort = toNode.inputPorts.find((p) => p.id === toPortId);
     if (!fromPort || !toPort) return [];
+    if (!fromPort.position || !toPort.position) return [];
 
     const startX = fromNode.position.x + fromPort.position.x;
     const startY = fromNode.position.y + fromPort.position.y;
