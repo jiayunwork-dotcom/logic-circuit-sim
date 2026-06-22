@@ -5,6 +5,9 @@ import { CanvasComponent } from './components/canvas/canvas.component';
 import { TruthTableComponent } from './components/truth-table/truth-table.component';
 import { KarnaughComponent } from './components/karnaugh/karnaugh.component';
 import { LevelPanelComponent } from './components/level-panel/level-panel.component';
+import { PropertiesPanelComponent } from './components/properties-panel/properties-panel.component';
+import { WaveformPanelComponent } from './components/waveform-panel/waveform-panel.component';
+import { TimingEditorComponent } from './components/timing-editor/timing-editor.component';
 import { CircuitService } from './services/circuit.service';
 import { HistoryService } from './services/history.service';
 import { TruthTableService } from './services/truth-table.service';
@@ -23,6 +26,9 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
     TruthTableComponent,
     KarnaughComponent,
     LevelPanelComponent,
+    PropertiesPanelComponent,
+    WaveformPanelComponent,
+    TimingEditorComponent,
   ],
   providers: [
     CircuitService,
@@ -48,6 +54,10 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
           <button class="btn" (click)="onToggleKMap()" [class.disabled]="!canShowKMap">🎯 卡诺图</button>
           <button class="btn" (click)="showExpressions = !showExpressions" [class.active]="showExpressions">📝 表达式</button>
           <div class="divider"></div>
+          <button class="btn" (click)="onToggleTiming()" [class.active]="isTimingMode">
+            ⏱️ 时序仿真
+          </button>
+          <div class="divider"></div>
           <button class="btn" (click)="onSaveLocal()">💾 保存</button>
           <button class="btn" (click)="onLoadLocal()">📂 加载</button>
           <button class="btn" (click)="onExportJSON()">⬇ 导出</button>
@@ -61,7 +71,11 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
 
       <div class="app-body">
         <app-toolbar></app-toolbar>
-        <app-canvas [showExpressions]="showExpressions"></app-canvas>
+        <app-canvas
+          [showExpressions]="showExpressions"
+          [isTimingMode]="isTimingMode"
+          (nodeDoubleClick)="onNodeDoubleClick($event)"
+        ></app-canvas>
 
         <app-truth-table
           *ngIf="showTruthTable"
@@ -92,6 +106,23 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
       </div>
 
       <input type="file" #fileInput accept=".json" style="display: none" (change)="onFileSelected($event)">
+
+      <app-properties-panel
+        *ngIf="showPropertiesPanel"
+        [node]="selectedPropertyNode"
+        (close)="closePropertiesPanel()"
+        (delayChange)="onDelayChange($event)"
+      ></app-properties-panel>
+
+      <app-timing-editor
+        *ngIf="showTimingEditor"
+        [node]="selectedTimingNode"
+        (close)="closeTimingEditor()"
+      ></app-timing-editor>
+
+      <app-waveform-panel
+        *ngIf="isTimingMode"
+      ></app-waveform-panel>
 
       <div *ngIf="showInfo" class="info-panel">
         <h3>使用说明</h3>
@@ -301,6 +332,11 @@ export class AppComponent implements OnInit {
   hasFeedbackLoop = false;
   canShowKMap = false;
   showExpressions = true;
+  isTimingMode = false;
+  showPropertiesPanel = false;
+  showTimingEditor = false;
+  selectedPropertyNode: CircuitNode | null = null;
+  selectedTimingNode: CircuitNode | null = null;
 
   private selectedInputIds: string[] = [];
   private selectedOutputIds: string[] = [];
@@ -501,5 +537,48 @@ export class AppComponent implements OnInit {
     this.truthTableRows = studentTable;
     this.highlightRows = result.mismatchedRows;
     this.showTruthTable = true;
+  }
+
+  onToggleTiming(): void {
+    this.circuitService.toggleTimingSimulation();
+    this.isTimingMode = this.circuitService.timingState.isEnabled;
+
+    if (this.isTimingMode) {
+      const inputNodes = this.circuitService.state.nodes.filter((n) => n.type === 'INPUT');
+      if (inputNodes.length === 0) {
+        setTimeout(() => {
+          alert('请先添加至少一个输入开关，然后在时序仿真模式下点击输入开关来编辑波形');
+        }, 100);
+      }
+    }
+  }
+
+  onNodeDoubleClick(node: CircuitNode): void {
+    if (this.isTimingMode && node.type === 'INPUT') {
+      this.selectedTimingNode = node;
+      this.showTimingEditor = true;
+      this.showPropertiesPanel = false;
+    } else {
+      this.selectedPropertyNode = node;
+      this.showPropertiesPanel = true;
+      this.showTimingEditor = false;
+    }
+  }
+
+  closePropertiesPanel(): void {
+    this.showPropertiesPanel = false;
+    this.selectedPropertyNode = null;
+  }
+
+  closeTimingEditor(): void {
+    this.showTimingEditor = false;
+    this.selectedTimingNode = null;
+  }
+
+  onDelayChange(delay: number): void {
+    if (this.selectedPropertyNode) {
+      this.circuitService.setNodeDelay(this.selectedPropertyNode.id, delay);
+      this.historyService.saveState();
+    }
   }
 }

@@ -19,6 +19,7 @@ export interface CircuitNode {
   inputPorts: Port[];
   outputPorts: Port[];
   value?: SignalValue;
+  delay: number;
 }
 
 export interface Wire {
@@ -63,4 +64,31 @@ export interface Level {
 export interface HistoryState {
   nodes: CircuitNode[];
   wires: Wire[];
+}
+
+export interface TimingPoint {
+  time: number;
+  value: SignalValue;
+}
+
+export interface SignalWaveform {
+  signalId: string;
+  signalName: string;
+  type: 'input' | 'output';
+  points: TimingPoint[];
+}
+
+export interface TimingSimulationState {
+  isEnabled: boolean;
+  totalTime: number;
+  currentTime: number;
+  isPlaying: boolean;
+  speed: number;
+  waveforms: SignalWaveform[];
+}
+
+export interface InputSignalEdit {
+  nodeId: string;
+  transitions: number[];
+  initialValue: SignalValue;
 }

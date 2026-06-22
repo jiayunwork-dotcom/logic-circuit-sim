@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild, HostListener, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild, HostListener, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { CircuitService } from '../../services/circuit.service';
@@ -368,6 +368,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
   selectedWireIds: string[] = [];
   hasFeedbackLoop = false;
   @Input() showExpressions = true;
+  @Input() isTimingMode = false;
+  @Output() nodeDoubleClick = new EventEmitter<CircuitNode>();
 
   viewState: ViewState = {
     offsetX: 0,
@@ -386,6 +388,8 @@ export class CanvasComponent implements OnInit, OnDestroy {
   wireStartPort: Port | null = null;
   wireEndPos = { x: 0, y: 0 };
   mouseWorldPos = { x: 0, y: 0 };
+  clickCount = 0;
+  clickTimer: any = null;
 
   private subscription = new Subscription();
 
@@ -603,21 +607,44 @@ export class CanvasComponent implements OnInit, OnDestroy {
     event.stopPropagation();
 
     if (event.button === 0) {
-      if (node.type === 'INPUT') {
-        this.circuitService.toggleInput(node.id);
-        this.historyService.saveState();
+      this.clickCount++;
+      if (this.clickTimer) {
+        clearTimeout(this.clickTimer);
+      }
+
+      if (this.clickCount === 2) {
+        this.clickCount = 0;
+        this.nodeDoubleClick.emit(node);
         return;
       }
 
-      this.isDraggingNode = true;
-      this.draggingNodeId = node.id;
-      const pos = this.screenToWorld(event.clientX, event.clientY);
-      this.dragNodeStartPos = {
-        x: pos.x - (node?.position?.x ?? 0),
-        y: pos.y - (node?.position?.y ?? 0),
-      };
-      this.circuitService.selectNode(node.id, event.shiftKey);
+      this.clickTimer = setTimeout(() => {
+        this.clickCount = 0;
+        this.handleNodeSingleClick(event, node);
+      }, 250);
     }
+  }
+
+  private handleNodeSingleClick(event: MouseEvent, node: CircuitNode): void {
+    if (this.isTimingMode && node.type === 'INPUT') {
+      this.nodeDoubleClick.emit(node);
+      return;
+    }
+
+    if (node.type === 'INPUT') {
+      this.circuitService.toggleInput(node.id);
+      this.historyService.saveState();
+      return;
+    }
+
+    this.isDraggingNode = true;
+    this.draggingNodeId = node.id;
+    const pos = this.screenToWorld(event.clientX, event.clientY);
+    this.dragNodeStartPos = {
+      x: pos.x - (node?.position?.x ?? 0),
+      y: pos.y - (node?.position?.y ?? 0),
+    };
+    this.circuitService.selectNode(node.id, event.shiftKey);
   }
 
   onPortMouseDown(event: MouseEvent, node: CircuitNode, port: Port): void {
