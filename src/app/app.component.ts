@@ -1,4 +1,4 @@
-import { Component, ViewChild, OnInit } from '@angular/core';
+import { Component, ViewChild, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToolbarComponent } from './components/toolbar/toolbar.component';
 import { CanvasComponent } from './components/canvas/canvas.component';
@@ -75,6 +75,7 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
           [showExpressions]="showExpressions"
           [isTimingMode]="isTimingMode"
           (nodeDoubleClick)="onNodeDoubleClick($event)"
+          (nodeTimingEditClick)="onNodeTimingEditClick($event)"
         ></app-canvas>
 
         <app-truth-table
@@ -347,7 +348,8 @@ export class AppComponent implements OnInit {
     private truthTableService: TruthTableService,
     private storageService: StorageService,
     private booleanExpressionService: BooleanExpressionService,
-    private levelService: LevelService
+    private levelService: LevelService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -554,15 +556,17 @@ export class AppComponent implements OnInit {
   }
 
   onNodeDoubleClick(node: CircuitNode): void {
-    if (this.isTimingMode && node.type === 'INPUT') {
-      this.selectedTimingNode = node;
-      this.showTimingEditor = true;
-      this.showPropertiesPanel = false;
-    } else {
-      this.selectedPropertyNode = node;
-      this.showPropertiesPanel = true;
-      this.showTimingEditor = false;
-    }
+    this.selectedPropertyNode = node;
+    this.showPropertiesPanel = true;
+    this.showTimingEditor = false;
+    this.cdr.detectChanges();
+  }
+
+  onNodeTimingEditClick(node: CircuitNode): void {
+    this.selectedTimingNode = node;
+    this.showTimingEditor = true;
+    this.showPropertiesPanel = false;
+    this.cdr.detectChanges();
   }
 
   closePropertiesPanel(): void {

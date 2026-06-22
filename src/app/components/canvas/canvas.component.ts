@@ -370,6 +370,7 @@ export class CanvasComponent implements OnInit, OnDestroy {
   @Input() showExpressions = true;
   @Input() isTimingMode = false;
   @Output() nodeDoubleClick = new EventEmitter<CircuitNode>();
+  @Output() nodeTimingEditClick = new EventEmitter<CircuitNode>();
 
   viewState: ViewState = {
     offsetX: 0,
@@ -607,6 +608,11 @@ export class CanvasComponent implements OnInit, OnDestroy {
     event.stopPropagation();
 
     if (event.button === 0) {
+      if (this.isTimingMode && node.type === 'INPUT') {
+        this.nodeTimingEditClick.emit(node);
+        return;
+      }
+
       this.clickCount++;
       if (this.clickTimer) {
         clearTimeout(this.clickTimer);
@@ -626,11 +632,6 @@ export class CanvasComponent implements OnInit, OnDestroy {
   }
 
   private handleNodeSingleClick(event: MouseEvent, node: CircuitNode): void {
-    if (this.isTimingMode && node.type === 'INPUT') {
-      this.nodeDoubleClick.emit(node);
-      return;
-    }
-
     if (node.type === 'INPUT') {
       this.circuitService.toggleInput(node.id);
       this.historyService.saveState();
