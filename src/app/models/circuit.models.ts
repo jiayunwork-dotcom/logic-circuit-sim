@@ -92,3 +92,27 @@ export interface InputSignalEdit {
   transitions: number[];
   initialValue: SignalValue;
 }
+
+export interface CircuitSnapshot {
+  id: string;
+  name: string;
+  createdAt: string;
+  nodes: CircuitNode[];
+  wires: Wire[];
+}
+
+export interface ComparisonResult {
+  inputCombination: { name: string; value: number }[];
+  outputA: { name: string; value: number }[];
+  outputB: { name: string; value: number }[];
+  isDifferent: boolean;
+}
+
+export interface EquivalenceResult {
+  isEquivalent: boolean;
+  results: ComparisonResult[];
+  totalCombinations: number;
+  mismatchedCount: number;
+  inputCount: number;
+  warning?: string;
+}

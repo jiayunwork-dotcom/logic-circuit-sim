@@ -8,12 +8,16 @@ import { LevelPanelComponent } from './components/level-panel/level-panel.compon
 import { PropertiesPanelComponent } from './components/properties-panel/properties-panel.component';
 import { WaveformPanelComponent } from './components/waveform-panel/waveform-panel.component';
 import { TimingEditorComponent } from './components/timing-editor/timing-editor.component';
+import { SnapshotPanelComponent } from './components/snapshot-panel/snapshot-panel.component';
+import { CompareViewComponent } from './components/compare-view/compare-view.component';
 import { CircuitService } from './services/circuit.service';
 import { HistoryService } from './services/history.service';
 import { TruthTableService } from './services/truth-table.service';
 import { StorageService } from './services/storage.service';
 import { BooleanExpressionService } from './services/boolean-expression.service';
 import { LevelService } from './services/level.service';
+import { SnapshotService } from './services/snapshot.service';
+import { EquivalenceService } from './services/equivalence.service';
 import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
 
 @Component({
@@ -29,6 +33,8 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
     PropertiesPanelComponent,
     WaveformPanelComponent,
     TimingEditorComponent,
+    SnapshotPanelComponent,
+    CompareViewComponent,
   ],
   providers: [
     CircuitService,
@@ -37,108 +43,132 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
     StorageService,
     BooleanExpressionService,
     LevelService,
+    SnapshotService,
+    EquivalenceService,
   ],
   template: `
-    <div class="app-container">
-      <header class="app-header">
-        <div class="header-left">
-          <h1>数字逻辑电路模拟器</h1>
-          <span class="subtitle">计算机组成原理教学工具</span>
+    <ng-container *ngIf="!isCompareMode; else compareViewTpl">
+      <div class="app-container">
+        <header class="app-header">
+          <div class="header-left">
+            <h1>数字逻辑电路模拟器</h1>
+            <span class="subtitle">计算机组成原理教学工具</span>
+          </div>
+          <div class="header-actions">
+            <button class="btn" (click)="onUndo()" [disabled]="!canUndo">↶ 撤销</button>
+            <button class="btn" (click)="onRedo()" [disabled]="!canRedo">↷ 重做</button>
+            <button class="btn" (click)="onClear()">🗑 清空</button>
+            <div class="divider"></div>
+            <button class="btn btn-primary" (click)="onGenerateTruthTable()">📊 真值表</button>
+            <button class="btn" (click)="onToggleKMap()" [class.disabled]="!canShowKMap">🎯 卡诺图</button>
+            <button class="btn" (click)="showExpressions = !showExpressions" [class.active]="showExpressions">📝 表达式</button>
+            <div class="divider"></div>
+            <button class="btn" (click)="onToggleTiming()" [class.active]="isTimingMode">
+              ⏱️ 时序仿真
+            </button>
+            <div class="divider"></div>
+            <button class="btn btn-success" (click)="onTakeSnapshot()">
+              📸 拍快照
+            </button>
+            <button class="btn" (click)="showSnapshotPanel = true" [class.active]="showSnapshotPanel">
+              📚 快照列表
+            </button>
+            <div class="divider"></div>
+            <button class="btn" (click)="onSaveLocal()">💾 保存</button>
+            <button class="btn" (click)="onLoadLocal()">📂 加载</button>
+            <button class="btn" (click)="onExportJSON()">⬇ 导出</button>
+            <button class="btn" (click)="onImportJSON()">⬆ 导入</button>
+            <div class="divider"></div>
+            <button class="btn btn-accent" (click)="showLevelPanel = !showLevelPanel">
+              🎮 关卡
+            </button>
+          </div>
+        </header>
+
+        <div class="app-body">
+          <app-toolbar></app-toolbar>
+          <app-canvas
+            [showExpressions]="showExpressions"
+            [isTimingMode]="isTimingMode"
+            (nodeDoubleClick)="onNodeDoubleClick($event)"
+            (nodeTimingEditClick)="onNodeTimingEditClick($event)"
+          ></app-canvas>
+
+          <app-truth-table
+            *ngIf="showTruthTable"
+            [rows]="truthTableRows"
+            [highlightRows]="highlightRows"
+            (close)="showTruthTable = false"
+            (exportCSV)="onExportCSV()"
+          ></app-truth-table>
+
+          <app-karnaugh
+            *ngIf="showKMap"
+            [showKMap]="showKMap"
+            [truthTable]="truthTableRows"
+            [outputIndex]="0"
+            [disabled]="!canShowKMap"
+          ></app-karnaugh>
+
+          <app-level-panel
+            *ngIf="showLevelPanel"
+            (close)="showLevelPanel = false"
+            (startLevel)="onStartLevel($event)"
+            (verifyLevel)="onVerifyLevel($event)"
+          ></app-level-panel>
         </div>
-        <div class="header-actions">
-          <button class="btn" (click)="onUndo()" [disabled]="!canUndo">↶ 撤销</button>
-          <button class="btn" (click)="onRedo()" [disabled]="!canRedo">↷ 重做</button>
-          <button class="btn" (click)="onClear()">🗑 清空</button>
-          <div class="divider"></div>
-          <button class="btn btn-primary" (click)="onGenerateTruthTable()">📊 真值表</button>
-          <button class="btn" (click)="onToggleKMap()" [class.disabled]="!canShowKMap">🎯 卡诺图</button>
-          <button class="btn" (click)="showExpressions = !showExpressions" [class.active]="showExpressions">📝 表达式</button>
-          <div class="divider"></div>
-          <button class="btn" (click)="onToggleTiming()" [class.active]="isTimingMode">
-            ⏱️ 时序仿真
-          </button>
-          <div class="divider"></div>
-          <button class="btn" (click)="onSaveLocal()">💾 保存</button>
-          <button class="btn" (click)="onLoadLocal()">📂 加载</button>
-          <button class="btn" (click)="onExportJSON()">⬇ 导出</button>
-          <button class="btn" (click)="onImportJSON()">⬆ 导入</button>
-          <div class="divider"></div>
-          <button class="btn btn-accent" (click)="showLevelPanel = !showLevelPanel">
-            🎮 关卡
-          </button>
+
+        <div *ngIf="hasFeedbackLoop" class="feedback-warning">
+          ⚠️ 检测到反馈环路，组合电路不允许环路
         </div>
-      </header>
 
-      <div class="app-body">
-        <app-toolbar></app-toolbar>
-        <app-canvas
-          [showExpressions]="showExpressions"
-          [isTimingMode]="isTimingMode"
-          (nodeDoubleClick)="onNodeDoubleClick($event)"
-          (nodeTimingEditClick)="onNodeTimingEditClick($event)"
-        ></app-canvas>
+        <input type="file" #fileInput accept=".json" style="display: none" (change)="onFileSelected($event)">
 
-        <app-truth-table
-          *ngIf="showTruthTable"
-          [rows]="truthTableRows"
-          [highlightRows]="highlightRows"
-          (close)="showTruthTable = false"
-          (exportCSV)="onExportCSV()"
-        ></app-truth-table>
+        <app-properties-panel
+          *ngIf="showPropertiesPanel"
+          [node]="selectedPropertyNode"
+          (close)="closePropertiesPanel()"
+          (delayChange)="onDelayChange($event)"
+        ></app-properties-panel>
 
-        <app-karnaugh
-          *ngIf="showKMap"
-          [showKMap]="showKMap"
-          [truthTable]="truthTableRows"
-          [outputIndex]="0"
-          [disabled]="!canShowKMap"
-        ></app-karnaugh>
+        <app-timing-editor
+          *ngIf="showTimingEditor"
+          [node]="selectedTimingNode"
+          (close)="closeTimingEditor()"
+        ></app-timing-editor>
 
-        <app-level-panel
-          *ngIf="showLevelPanel"
-          (close)="showLevelPanel = false"
-          (startLevel)="onStartLevel($event)"
-          (verifyLevel)="onVerifyLevel($event)"
-        ></app-level-panel>
+        <app-waveform-panel
+          *ngIf="isTimingMode"
+        ></app-waveform-panel>
+
+        <app-snapshot-panel
+          [isOpen]="showSnapshotPanel"
+          (close)="showSnapshotPanel = false"
+          (compare)="onStartCompare($event)"
+          (loadSnapshot)="onSnapshotLoaded()"
+        ></app-snapshot-panel>
+
+        <div *ngIf="showInfo" class="info-panel">
+          <h3>使用说明</h3>
+          <ul>
+            <li>从左侧工具栏拖拽元件到画布</li>
+            <li>点击输入开关切换 0/1</li>
+            <li>从输出端口拖拽到输入端口连线</li>
+            <li>滚轮缩放，按住空白处拖拽平移</li>
+            <li>选中元件后按 Delete 删除</li>
+            <li>Ctrl+Z 撤销，Ctrl+Y 重做</li>
+            <li>选择输入输出后点击"真值表"生成</li>
+            <li>点击"📸 拍快照"保存电路状态</li>
+            <li>从快照列表选择两个快照可对比验证等价性</li>
+          </ul>
+          <button class="btn" (click)="showInfo = false">关闭</button>
+        </div>
       </div>
+    </ng-container>
 
-      <div *ngIf="hasFeedbackLoop" class="feedback-warning">
-        ⚠️ 检测到反馈环路，组合电路不允许环路
-      </div>
-
-      <input type="file" #fileInput accept=".json" style="display: none" (change)="onFileSelected($event)">
-
-      <app-properties-panel
-        *ngIf="showPropertiesPanel"
-        [node]="selectedPropertyNode"
-        (close)="closePropertiesPanel()"
-        (delayChange)="onDelayChange($event)"
-      ></app-properties-panel>
-
-      <app-timing-editor
-        *ngIf="showTimingEditor"
-        [node]="selectedTimingNode"
-        (close)="closeTimingEditor()"
-      ></app-timing-editor>
-
-      <app-waveform-panel
-        *ngIf="isTimingMode"
-      ></app-waveform-panel>
-
-      <div *ngIf="showInfo" class="info-panel">
-        <h3>使用说明</h3>
-        <ul>
-          <li>从左侧工具栏拖拽元件到画布</li>
-          <li>点击输入开关切换 0/1</li>
-          <li>从输出端口拖拽到输入端口连线</li>
-          <li>滚轮缩放，按住空白处拖拽平移</li>
-          <li>选中元件后按 Delete 删除</li>
-          <li>Ctrl+Z 撤销，Ctrl+Y 重做</li>
-          <li>选择输入输出后点击"真值表"生成</li>
-        </ul>
-        <button class="btn" (click)="showInfo = false">关闭</button>
-      </div>
-    </div>
+    <ng-template #compareViewTpl>
+      <app-compare-view></app-compare-view>
+    </ng-template>
   `,
   styles: [
     `
@@ -215,6 +245,15 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
 
     .btn-primary:hover {
       background: #388E3C;
+    }
+
+    .btn-success {
+      background: #00BCD4;
+      border-color: #0097A7;
+    }
+
+    .btn-success:hover {
+      background: #0097A7;
     }
 
     .btn-accent {
@@ -321,11 +360,14 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
 export class AppComponent implements OnInit {
   @ViewChild('fileInput') fileInput: any;
   @ViewChild(LevelPanelComponent) levelPanel!: LevelPanelComponent;
+  @ViewChild(CompareViewComponent) compareView!: CompareViewComponent;
 
   showTruthTable = false;
   showKMap = false;
   showLevelPanel = false;
+  showSnapshotPanel = false;
   showInfo = true;
+  isCompareMode = false;
   truthTableRows: TruthTableRow[] = [];
   highlightRows: number[] = [];
   canUndo = false;
@@ -349,6 +391,8 @@ export class AppComponent implements OnInit {
     private storageService: StorageService,
     private booleanExpressionService: BooleanExpressionService,
     private levelService: LevelService,
+    private snapshotService: SnapshotService,
+    private equivalenceService: EquivalenceService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -437,6 +481,42 @@ export class AppComponent implements OnInit {
     if (this.truthTableRows.length > 0) {
       this.truthTableService.downloadCSV(this.truthTableRows);
     }
+  }
+
+  onTakeSnapshot(): void {
+    const state = this.circuitService.state;
+    if (state.nodes.length === 0) {
+      alert('画布为空，无法拍摄快照');
+      return;
+    }
+
+    const name = prompt('请输入快照名称：', `快照 ${this.snapshotService.snapshots.length + 1}`);
+    if (name && name.trim()) {
+      const snapshot = this.snapshotService.takeSnapshot(name.trim());
+      alert(`快照已保存：${snapshot.name}\n点击"快照列表"查看管理`);
+    }
+  }
+
+  onSnapshotLoaded(): void {
+    this.historyService.reset();
+    this.updateHistoryButtons();
+  }
+
+  onStartCompare(snapshotIds: [string, string]): void {
+    this.showSnapshotPanel = false;
+    this.isCompareMode = true;
+
+    setTimeout(() => {
+      if (this.compareView) {
+        const success = this.compareView.init(snapshotIds, () => {
+          this.isCompareMode = false;
+        });
+        if (!success) {
+          alert('无法加载快照进行对比');
+          this.isCompareMode = false;
+        }
+      }
+    }, 50);
   }
 
   onSaveLocal(): void {
