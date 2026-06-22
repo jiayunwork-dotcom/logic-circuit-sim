@@ -590,6 +590,10 @@ export class EquivalenceResultComponent implements OnInit, OnDestroy {
     if (nextIndex >= this.filteredResults.length) {
       this.isPlaying = false;
       this.isPaused = false;
+      this.currentPlaybackIndex = -1;
+      this.isFlashing = false;
+      this.clearTimers();
+      this.playbackStop.emit();
       return;
     }
 

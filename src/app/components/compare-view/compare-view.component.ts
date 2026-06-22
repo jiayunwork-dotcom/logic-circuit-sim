@@ -395,32 +395,34 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
       word-break: break-all;
     }
 
-    .expression-content .var-high {
-      color: #1565C0;
-      font-weight: bold;
-      background: #BBDEFB;
-      padding: 2px 6px;
-      border-radius: 4px;
-      border: 1px solid #64B5F6;
+    :host ::ng-deep .expression-content .var-high {
+      color: #1565C0 !important;
+      font-weight: bold !important;
+      background: #BBDEFB !important;
+      padding: 2px 6px !important;
+      border-radius: 4px !important;
+      border: 1px solid #64B5F6 !important;
+      display: inline-block !important;
     }
 
-    .expression-content .var-low {
-      color: #9E9E9E;
-      background: #EEEEEE;
-      padding: 2px 6px;
-      border-radius: 4px;
-      border: 1px solid #E0E0E0;
-      opacity: 0.7;
+    :host ::ng-deep .expression-content .var-low {
+      color: #9E9E9E !important;
+      background: #EEEEEE !important;
+      padding: 2px 6px !important;
+      border-radius: 4px !important;
+      border: 1px solid #E0E0E0 !important;
+      opacity: 0.7 !important;
+      display: inline-block !important;
     }
 
-    .expression-content .expr-output {
-      color: #388E3C;
-      font-weight: bold;
+    :host ::ng-deep .expression-content .expr-output {
+      color: #388E3C !important;
+      font-weight: bold !important;
     }
 
-    .expression-content .expr-empty {
-      color: #999;
-      font-style: italic;
+    :host ::ng-deep .expression-content .expr-empty {
+      color: #999 !important;
+      font-style: italic !important;
     }
 
     .verifying-overlay {

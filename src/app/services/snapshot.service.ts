@@ -355,12 +355,15 @@ export class SnapshotService {
         const dy = Math.abs(node.position.y - oldNode.position.y);
         if (dx > 20 || dy > 20) {
           movedNodes++;
+          const deltaX = (node.position.x - oldNode.position.x).toFixed(0);
+          const deltaY = (node.position.y - oldNode.position.y).toFixed(0);
+          const deltaStr = `${deltaX.startsWith('-') ? '' : '+'}${deltaX}px, ${deltaY.startsWith('-') ? '' : '+'}${deltaY}px`;
           items.push({
             type: 'move',
             category: 'node',
             id: node.id,
             description: `移动元件: ${node.label || node.type}`,
-            details: `位移: X ${(node.position.x - oldNode.position.x).toFixed(0)}px, Y ${(node.position.y - oldNode.position.y).toFixed(0)}px`,
+            details: `从 (${oldNode.position.x.toFixed(0)}, ${oldNode.position.y.toFixed(0)}) → 到 (${node.position.x.toFixed(0)}, ${node.position.y.toFixed(0)})，位移: ${deltaStr}`,
           });
         }
       }
