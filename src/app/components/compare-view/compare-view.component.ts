@@ -1,6 +1,7 @@
 import { Component, Input, OnChanges, SimpleChanges, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CircuitSnapshot, CircuitNode, Wire, ComparisonResult, EquivalenceResult } from '../../models/circuit.models';
 import { SnapshotService } from '../../services/snapshot.service';
 import { EquivalenceService } from '../../services/equivalence.service';
@@ -66,8 +67,11 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
               [isThumbnail]="false"
             ></app-readonly-canvas>
           </div>
-          <div class="expression-panel">
-            <div class="expression-label">📝 布尔表达式 (A)</div>
+          <div class="expression-panel expr-panel-a">
+            <div class="expression-label expr-label-a">
+              <span class="badge-a">A</span>
+              📝 电路 A 布尔表达式
+            </div>
             <div class="expression-content" [innerHTML]="expressionA"></div>
           </div>
         </div>
@@ -84,8 +88,11 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
               [isThumbnail]="false"
             ></app-readonly-canvas>
           </div>
-          <div class="expression-panel">
-            <div class="expression-label">📝 布尔表达式 (B)</div>
+          <div class="expression-panel expr-panel-b">
+            <div class="expression-label expr-label-b">
+              <span class="badge-b">B</span>
+              📝 电路 B 布尔表达式
+            </div>
             <div class="expression-content" [innerHTML]="expressionB"></div>
           </div>
         </div>
@@ -334,11 +341,50 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
       border-top: 1px solid #ddd;
     }
 
+    .expr-panel-a {
+      border-left: 4px solid #1976D2;
+    }
+
+    .expr-panel-b {
+      border-left: 4px solid #388E3C;
+    }
+
     .expression-label {
       font-size: 12px;
       font-weight: 600;
       color: #666;
       margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .expr-label-a {
+      color: #1565C0;
+    }
+
+    .expr-label-b {
+      color: #2E7D32;
+    }
+
+    .badge-a, .badge-b {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    .badge-a {
+      background: #1976D2;
+    }
+
+    .badge-b {
+      background: #388E3C;
     }
 
     .expression-content {
@@ -443,13 +489,14 @@ export class CompareViewComponent implements OnInit, OnChanges, OnDestroy {
   verifying = false;
   totalCombinations = 0;
   initialized = false;
-  expressionA = '';
-  expressionB = '';
+  expressionA: SafeHtml = '';
+  expressionB: SafeHtml = '';
 
   constructor(
     private snapshotService: SnapshotService,
     private equivalenceService: EquivalenceService,
-    private booleanExpressionService: BooleanExpressionService
+    private booleanExpressionService: BooleanExpressionService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -540,14 +587,10 @@ export class CompareViewComponent implements OnInit, OnChanges, OnDestroy {
       inputValueMap.set(name, this.currentInputValues[i]);
     });
 
-    this.expressionA = this.getHighlightedExpression(
-      this.snapshotA,
-      inputValueMap
-    );
-    this.expressionB = this.getHighlightedExpression(
-      this.snapshotB,
-      inputValueMap
-    );
+    const htmlA = this.getHighlightedExpression(this.snapshotA, inputValueMap);
+    const htmlB = this.getHighlightedExpression(this.snapshotB, inputValueMap);
+    this.expressionA = this.sanitizer.bypassSecurityTrustHtml(htmlA);
+    this.expressionB = this.sanitizer.bypassSecurityTrustHtml(htmlB);
   }
 
   private getHighlightedExpression(

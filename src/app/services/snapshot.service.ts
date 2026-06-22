@@ -303,14 +303,30 @@ export class SnapshotService {
     let addedWires = 0;
     let removedWires = 0;
 
-    const nodeMapA = new Map<string, CircuitNode>();
-    const nodeMapB = new Map<string, CircuitNode>();
+    const getNodeKey = (node: CircuitNode): string => {
+      const label = node.label ? node.label.trim() : '';
+      return label ? `${node.type}:${label}` : node.id;
+    };
 
-    snapA.nodes.forEach((n) => nodeMapA.set(n.id, n));
-    snapB.nodes.forEach((n) => nodeMapB.set(n.id, n));
+    const nodeKeyMapA = new Map<string, CircuitNode>();
+    const nodeKeyMapB = new Map<string, CircuitNode>();
+    const nodeIdToKeyA = new Map<string, string>();
+    const nodeIdToKeyB = new Map<string, string>();
+
+    snapA.nodes.forEach((n) => {
+      const key = getNodeKey(n);
+      nodeKeyMapA.set(key, n);
+      nodeIdToKeyA.set(n.id, key);
+    });
+    snapB.nodes.forEach((n) => {
+      const key = getNodeKey(n);
+      nodeKeyMapB.set(key, n);
+      nodeIdToKeyB.set(n.id, key);
+    });
 
     for (const node of snapA.nodes) {
-      if (!nodeMapB.has(node.id)) {
+      const key = getNodeKey(node);
+      if (!nodeKeyMapB.has(key)) {
         removedNodes++;
         items.push({
           type: 'remove',
@@ -323,7 +339,8 @@ export class SnapshotService {
     }
 
     for (const node of snapB.nodes) {
-      if (!nodeMapA.has(node.id)) {
+      const key = getNodeKey(node);
+      if (!nodeKeyMapA.has(key)) {
         addedNodes++;
         items.push({
           type: 'add',
@@ -333,7 +350,7 @@ export class SnapshotService {
           details: `类型: ${node.type}`,
         });
       } else {
-        const oldNode = nodeMapA.get(node.id)!;
+        const oldNode = nodeKeyMapA.get(key)!;
         const dx = Math.abs(node.position.x - oldNode.position.x);
         const dy = Math.abs(node.position.y - oldNode.position.y);
         if (dx > 20 || dy > 20) {
@@ -349,38 +366,53 @@ export class SnapshotService {
       }
     }
 
-    const wireMapA = new Map<string, Wire>();
-    const wireMapB = new Map<string, Wire>();
+    const getWireKey = (wire: Wire, idToKey: Map<string, string>): string => {
+      const fromKey = idToKey.get(wire.fromNodeId) || wire.fromNodeId;
+      const toKey = idToKey.get(wire.toNodeId) || wire.toNodeId;
+      return `${fromKey}->${toKey}:${wire.fromPortId}-${wire.toPortId}`;
+    };
 
-    snapA.wires.forEach((w) => wireMapA.set(w.id, w));
-    snapB.wires.forEach((w) => wireMapB.set(w.id, w));
+    const wireKeyMapA = new Map<string, Wire>();
+    const wireKeyMapB = new Map<string, Wire>();
+
+    snapA.wires.forEach((w) => {
+      const key = getWireKey(w, nodeIdToKeyA);
+      wireKeyMapA.set(key, w);
+    });
+    snapB.wires.forEach((w) => {
+      const key = getWireKey(w, nodeIdToKeyB);
+      wireKeyMapB.set(key, w);
+    });
+
+    const getNodeDesc = (nodeId: string, idToKey: Map<string, string>, snap: CircuitSnapshot): string => {
+      const node = snap.nodes.find((n) => n.id === nodeId);
+      return node?.label || node?.type || nodeId;
+    };
 
     for (const wire of snapA.wires) {
-      if (!wireMapB.has(wire.id)) {
+      const key = getWireKey(wire, nodeIdToKeyA);
+      if (!wireKeyMapB.has(key)) {
         removedWires++;
-        const fromNode = nodeMapA.get(wire.fromNodeId);
-        const toNode = nodeMapA.get(wire.toNodeId);
         items.push({
           type: 'remove',
           category: 'wire',
           id: wire.id,
           description: `删除连线`,
-          details: `从 ${fromNode?.label || fromNode?.type || wire.fromNodeId} 到 ${toNode?.label || toNode?.type || wire.toNodeId}`,
+          details: `从 ${getNodeDesc(wire.fromNodeId, nodeIdToKeyA, snapA)} 到 ${getNodeDesc(wire.toNodeId, nodeIdToKeyA, snapA)}`,
         });
       }
     }
 
     for (const wire of snapB.wires) {
-      if (!wireMapA.has(wire.id)) {
+      const key = getWireKey(wire, nodeIdToKeyB);
+      if (!wireKeyMapA.has(key)) {
         addedWires++;
-        const fromNode = nodeMapB.get(wire.fromNodeId);
-        const toNode = nodeMapB.get(wire.toNodeId);
         items.push({
           type: 'add',
           category: 'wire',
           id: wire.id,
           description: `新增连线`,
-          details: `从 ${fromNode?.label || fromNode?.type || wire.fromNodeId} 到 ${toNode?.label || toNode?.type || wire.toNodeId}`,
+          details: `从 ${getNodeDesc(wire.fromNodeId, nodeIdToKeyB, snapB)} 到 ${getNodeDesc(wire.toNodeId, nodeIdToKeyB, snapB)}`,
         });
       }
     }
