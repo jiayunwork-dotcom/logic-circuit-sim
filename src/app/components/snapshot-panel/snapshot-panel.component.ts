@@ -25,80 +25,90 @@ import { ReadonlyCanvasComponent } from '../readonly-canvas/readonly-canvas.comp
         <div class="snapshot-list">
           <div
             *ngFor="let snapshot of snapshots; let i = index"
-            class="snapshot-item"
-            [class.selected]="selectedIds.includes(snapshot.id)"
-            [class.renaming]="renamingId === snapshot.id"
-            [class.dragging]="dragIndex === i"
-            [class.drag-over-top]="dragOverIndex === i && dragIndex !== null && dragIndex > i"
-            [class.drag-over-bottom]="dragOverIndex === i && dragIndex !== null && dragIndex < i"
-            draggable="true"
-            (dragstart)="onDragStart(i, $event)"
-            (dragover)="onDragOver(i, $event)"
-            (dragleave)="onDragLeave()"
-            (drop)="onDrop(i, $event)"
-            (dragend)="onDragEnd()"
+            class="snapshot-item-wrapper"
           >
-            <div class="drag-handle" (mousedown)="$event.stopPropagation()">
-              <span class="handle-dots">⋮⋮</span>
-            </div>
-
-            <div class="snapshot-select" (click)="toggleSelect(snapshot.id)">
-              <div class="checkbox" [class.checked]="selectedIds.includes(snapshot.id)">
-                <span *ngIf="selectedIds.includes(snapshot.id)">✓</span>
+            <div
+              *ngIf="dragOverIndex === i && dragIndex !== null && dragIndex !== i"
+              class="drop-placeholder"
+            >
+              <div class="drop-placeholder-inner">
+                <span>释放插入到这里</span>
               </div>
             </div>
 
-            <div class="snapshot-main">
-              <div
-                class="snapshot-header-row"
-                (click)="togglePreview(snapshot.id)"
-                style="cursor:pointer;"
-              >
-                <div *ngIf="renamingId !== snapshot.id" class="snapshot-name">
-                  {{ snapshot.name }} <span class="preview-hint">[点击预览]</span>
-                </div>
-                <div *ngIf="renamingId === snapshot.id" class="rename-input" (click)="$event.stopPropagation()">
-                  <input
-                    #renameInput
-                    type="text"
-                    [value]="snapshot.name"
-                    (keyup.enter)="finishRename(snapshot.id, renameInput.value)"
-                    (blur)="finishRename(snapshot.id, renameInput.value)"
-                    (click)="$event.stopPropagation()"
-                  />
-                </div>
-                <span class="snapshot-time">{{ formatTime(snapshot.createdAt) }}</span>
+            <div
+              class="snapshot-item"
+              [class.selected]="selectedIds.includes(snapshot.id)"
+              [class.renaming]="renamingId === snapshot.id"
+              [class.dragging]="dragIndex === i"
+              [class.drag-over]="dragOverIndex === i && dragIndex !== null && dragIndex !== i"
+              draggable="true"
+              (dragstart)="onDragStart(i, $event)"
+              (dragenter)="onDragEnter(i, $event)"
+              (dragover)="onDragOver(i, $event)"
+              (dragleave)="onDragLeave(i, $event)"
+              (drop)="onDrop(i, $event)"
+              (dragend)="onDragEnd()"
+            >
+              <div class="drag-handle" title="拖拽排序">
+                <span class="handle-dots">⋮⋮</span>
               </div>
 
-              <div
-                class="snapshot-thumbnail"
-                (click)="togglePreview(snapshot.id)"
-              >
-                <app-readonly-canvas
-                  *ngIf="previewId === snapshot.id"
-                  [nodes]="snapshot.nodes"
-                  [wires]="snapshot.wires"
-                  [isThumbnail]="true"
-                ></app-readonly-canvas>
-                <div *ngIf="previewId !== snapshot.id" class="thumbnail-placeholder">
-                  点击预览电路
+              <div class="snapshot-select" (click)="toggleSelect(snapshot.id)">
+                <div class="checkbox" [class.checked]="selectedIds.includes(snapshot.id)">
+                  <span *ngIf="selectedIds.includes(snapshot.id)">✓</span>
                 </div>
               </div>
 
-              <div class="snapshot-stats">
-                <span>{{ snapshot.nodes.length }} 元件</span>
-                <span>{{ snapshot.wires.length }} 连线</span>
-              </div>
+              <div class="snapshot-main">
+                <div
+                  class="snapshot-header-row"
+                  (click)="togglePreview(snapshot.id)"
+                  style="cursor:pointer;"
+                >
+                  <div *ngIf="renamingId !== snapshot.id" class="snapshot-name">
+                    {{ snapshot.name }} <span class="preview-hint">[点击预览]</span>
+                  </div>
+                  <div *ngIf="renamingId === snapshot.id" class="rename-input" (click)="$event.stopPropagation()">
+                    <input
+                      #renameInput
+                      type="text"
+                      [value]="snapshot.name"
+                      (keyup.enter)="finishRename(snapshot.id, renameInput.value)"
+                      (blur)="finishRename(snapshot.id, renameInput.value)"
+                      (click)="$event.stopPropagation()"
+                    />
+                  </div>
+                  <span class="snapshot-time">{{ formatTime(snapshot.createdAt) }}</span>
+                </div>
 
-              <div class="snapshot-actions">
-                <button class="action-btn" (click)="startRename(snapshot.id, $event)">✏️ 重命名</button>
-                <button class="action-btn" (click)="onLoad(snapshot.id, $event)">📂 加载</button>
-                <button class="action-btn danger" (click)="onDelete(snapshot.id, $event)">🗑 删除</button>
+                <div
+                  class="snapshot-thumbnail"
+                  (click)="togglePreview(snapshot.id)"
+                >
+                  <app-readonly-canvas
+                    *ngIf="previewId === snapshot.id"
+                    [nodes]="snapshot.nodes"
+                    [wires]="snapshot.wires"
+                    [isThumbnail]="true"
+                  ></app-readonly-canvas>
+                  <div *ngIf="previewId !== snapshot.id" class="thumbnail-placeholder">
+                    点击预览电路
+                  </div>
+                </div>
+
+                <div class="snapshot-stats">
+                  <span>{{ snapshot.nodes.length }} 元件</span>
+                  <span>{{ snapshot.wires.length }} 连线</span>
+                </div>
+
+                <div class="snapshot-actions">
+                  <button class="action-btn" (click)="startRename(snapshot.id, $event)">✏️ 重命名</button>
+                  <button class="action-btn" (click)="onLoad(snapshot.id, $event)">📂 加载</button>
+                  <button class="action-btn danger" (click)="onDelete(snapshot.id, $event)">🗑 删除</button>
+                </div>
               </div>
             </div>
-
-            <div *ngIf="dragOverIndex === i && dragIndex !== null && dragIndex > i" class="drop-indicator top"></div>
-            <div *ngIf="dragOverIndex === i && dragIndex !== null && dragIndex < i" class="drop-indicator bottom"></div>
           </div>
         </div>
       </div>
@@ -274,7 +284,43 @@ import { ReadonlyCanvasComponent } from '../readonly-canvas/readonly-canvas.comp
     .snapshot-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 0;
+    }
+
+    .snapshot-item-wrapper {
+      margin-bottom: 12px;
+    }
+
+    .snapshot-item-wrapper:last-child {
+      margin-bottom: 0;
+    }
+
+    .drop-placeholder {
+      margin-bottom: 12px;
+      border: 2px dashed #2196F3;
+      border-radius: 8px;
+      background: rgba(33, 150, 243, 0.1);
+      overflow: hidden;
+      animation: placeholder-pulse 1.2s ease-in-out infinite;
+    }
+
+    .drop-placeholder-inner {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #1976D2;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    @keyframes placeholder-pulse {
+      0%, 100% {
+        opacity: 0.6;
+      }
+      50% {
+        opacity: 1;
+      }
     }
 
     .snapshot-item {
@@ -284,12 +330,17 @@ import { ReadonlyCanvasComponent } from '../readonly-canvas/readonly-canvas.comp
       border: 2px solid #eee;
       border-radius: 8px;
       background: #fafafa;
-      transition: border-color 0.2s, opacity 0.2s;
-      position: relative;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
     }
 
     .snapshot-item.dragging {
-      opacity: 0.5;
+      opacity: 0.4;
+      transform: scale(0.98);
+    }
+
+    .snapshot-item.drag-over {
+      border-color: #2196F3;
+      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
     }
 
     .drag-handle {
@@ -299,9 +350,14 @@ import { ReadonlyCanvasComponent } from '../readonly-canvas/readonly-canvas.comp
       justify-content: center;
       padding-top: 4px;
       cursor: grab;
-      color: #999;
+      color: #bbb;
       user-select: none;
       width: 20px;
+      transition: color 0.2s;
+    }
+
+    .drag-handle:hover {
+      color: #666;
     }
 
     .drag-handle:active {
@@ -309,27 +365,9 @@ import { ReadonlyCanvasComponent } from '../readonly-canvas/readonly-canvas.comp
     }
 
     .handle-dots {
-      font-size: 16px;
+      font-size: 18px;
       line-height: 1;
       letter-spacing: -2px;
-    }
-
-    .drop-indicator {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: #2196F3;
-      border-radius: 2px;
-      z-index: 10;
-    }
-
-    .drop-indicator.top {
-      top: -3px;
-    }
-
-    .drop-indicator.bottom {
-      bottom: -3px;
     }
 
     .snapshot-item.selected {
@@ -843,6 +881,18 @@ export class SnapshotPanelComponent implements OnInit {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', String(index));
     }
+    setTimeout(() => {
+      const target = event.target as HTMLElement;
+      if (target) {
+        target.style.opacity = '0.5';
+      }
+    }, 0);
+  }
+
+  onDragEnter(index: number, event: DragEvent): void {
+    event.preventDefault();
+    if (this.dragIndex === null || this.dragIndex === index) return;
+    this.dragOverIndex = index;
   }
 
   onDragOver(index: number, event: DragEvent): void {
@@ -850,15 +900,26 @@ export class SnapshotPanelComponent implements OnInit {
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = 'move';
     }
-    this.dragOverIndex = index;
+    if (this.dragIndex === null || this.dragIndex === index) return;
+    if (this.dragOverIndex !== index) {
+      this.dragOverIndex = index;
+    }
   }
 
-  onDragLeave(): void {
-    this.dragOverIndex = null;
+  onDragLeave(index: number, event: DragEvent): void {
+    const relatedTarget = event.relatedTarget as HTMLElement;
+    const currentTarget = event.currentTarget as HTMLElement;
+    if (relatedTarget && currentTarget && currentTarget.contains(relatedTarget)) {
+      return;
+    }
+    if (this.dragOverIndex === index) {
+      this.dragOverIndex = null;
+    }
   }
 
   onDrop(index: number, event: DragEvent): void {
     event.preventDefault();
+    event.stopPropagation();
     if (this.dragIndex === null || this.dragIndex === index) {
       this.resetDragState();
       return;
@@ -869,6 +930,10 @@ export class SnapshotPanelComponent implements OnInit {
 
   onDragEnd(): void {
     this.resetDragState();
+    const items = document.querySelectorAll('.snapshot-item');
+    items.forEach((item) => {
+      (item as HTMLElement).style.opacity = '';
+    });
   }
 
   private resetDragState(): void {

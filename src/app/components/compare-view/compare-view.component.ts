@@ -350,18 +350,21 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
     }
 
     .expression-content .var-high {
-      color: #1976D2;
+      color: #1565C0;
       font-weight: bold;
-      background: #E3F2FD;
-      padding: 1px 4px;
-      border-radius: 3px;
+      background: #BBDEFB;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #64B5F6;
     }
 
     .expression-content .var-low {
-      color: #999;
-      background: #f5f5f5;
-      padding: 1px 4px;
-      border-radius: 3px;
+      color: #9E9E9E;
+      background: #EEEEEE;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #E0E0E0;
+      opacity: 0.7;
     }
 
     .expression-content .expr-output {
@@ -573,13 +576,45 @@ export class CompareViewComponent implements OnInit, OnChanges, OnDestroy {
   ): string {
     let result = expr;
     const sortedNames = Array.from(inputValueMap.keys()).sort((a, b) => b.length - a.length);
-    for (const name of sortedNames) {
-      const value = inputValueMap.get(name);
-      const colorClass = value === 1 ? 'var-high' : 'var-low';
-      const regex = new RegExp(`(${name})(?![^<]*>)`, 'g');
-      result = result.replace(regex, `<span class="${colorClass}">$1</span>`);
+
+    const parts: string[] = [];
+    let current = '';
+    let inTag = false;
+
+    for (let i = 0; i < result.length; i++) {
+      const char = result[i];
+      if (char === '<') {
+        if (current) {
+          parts.push(current);
+          current = '';
+        }
+        inTag = true;
+        current += char;
+      } else if (char === '>') {
+        current += char;
+        parts.push(current);
+        current = '';
+        inTag = false;
+      } else {
+        current += char;
+      }
     }
-    return result;
+    if (current) {
+      parts.push(current);
+    }
+
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i].startsWith('<')) continue;
+      for (const name of sortedNames) {
+        const value = inputValueMap.get(name);
+        const colorClass = value === 1 ? 'var-high' : 'var-low';
+        const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escapedName}\\b`, 'g');
+        parts[i] = parts[i].replace(regex, `<span class="${colorClass}">${name}</span>`);
+      }
+    }
+
+    return parts.join('');
   }
 
   onVerifyEquivalence(): void {
