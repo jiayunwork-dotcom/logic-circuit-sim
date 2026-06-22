@@ -66,6 +66,10 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
               [isThumbnail]="false"
             ></app-readonly-canvas>
           </div>
+          <div class="expression-panel">
+            <div class="expression-label">📝 布尔表达式 (A)</div>
+            <div class="expression-content" [innerHTML]="expressionA"></div>
+          </div>
         </div>
 
         <div class="canvas-wrapper">
@@ -80,6 +84,10 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
               [isThumbnail]="false"
             ></app-readonly-canvas>
           </div>
+          <div class="expression-panel">
+            <div class="expression-label">📝 布尔表达式 (B)</div>
+            <div class="expression-content" [innerHTML]="expressionB"></div>
+          </div>
         </div>
 
         <app-equivalence-result
@@ -87,6 +95,8 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
           [result]="equivalenceResult"
           (close)="showResult = false"
           (rowClick)="onResultRowClick($event)"
+          (playbackRowChange)="onPlaybackRowChange($event)"
+          (playbackStop)="onPlaybackStop()"
           (exportReport)="onExportReport()"
         ></app-equivalence-result>
       </div>
@@ -317,6 +327,53 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
       min-height: 0;
     }
 
+    .expression-panel {
+      flex-shrink: 0;
+      padding: 12px 16px;
+      background: #fff;
+      border-top: 1px solid #ddd;
+    }
+
+    .expression-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .expression-content {
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+      word-break: break-all;
+    }
+
+    .expression-content .var-high {
+      color: #1976D2;
+      font-weight: bold;
+      background: #E3F2FD;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .expression-content .var-low {
+      color: #999;
+      background: #f5f5f5;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .expression-content .expr-output {
+      color: #388E3C;
+      font-weight: bold;
+    }
+
+    .expression-content .expr-empty {
+      color: #999;
+      font-style: italic;
+    }
+
     .verifying-overlay {
       position: fixed;
       top: 0;
@@ -383,6 +440,8 @@ export class CompareViewComponent implements OnInit, OnChanges, OnDestroy {
   verifying = false;
   totalCombinations = 0;
   initialized = false;
+  expressionA = '';
+  expressionB = '';
 
   constructor(
     private snapshotService: SnapshotService,
@@ -432,6 +491,7 @@ export class CompareViewComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     this.applyCurrentInputs();
+    this.updateExpressions();
     this.initialized = true;
   }
 
@@ -465,6 +525,61 @@ export class CompareViewComponent implements OnInit, OnChanges, OnDestroy {
     );
     this.displayNodesB = resultB.nodes;
     this.displayWiresB = resultB.wires;
+
+    this.updateExpressions();
+  }
+
+  private updateExpressions(): void {
+    if (!this.snapshotA || !this.snapshotB) return;
+
+    const inputValueMap = new Map<string, 0 | 1>();
+    this.sharedInputs.forEach((name, i) => {
+      inputValueMap.set(name, this.currentInputValues[i]);
+    });
+
+    this.expressionA = this.getHighlightedExpression(
+      this.snapshotA,
+      inputValueMap
+    );
+    this.expressionB = this.getHighlightedExpression(
+      this.snapshotB,
+      inputValueMap
+    );
+  }
+
+  private getHighlightedExpression(
+    snapshot: CircuitSnapshot,
+    inputValueMap: Map<string, 0 | 1>
+  ): string {
+    const outputNodes = snapshot.nodes.filter((n) => n.type === 'OUTPUT');
+    if (outputNodes.length === 0) return '<span class="expr-empty">暂无输出</span>';
+
+    const expressions: string[] = [];
+    for (const outputNode of outputNodes) {
+      const wire = snapshot.wires.find((w) => w.toNodeId === outputNode.id);
+      if (wire) {
+        const expr = this.buildExpression(wire.fromNodeId, snapshot.nodes, snapshot.wires);
+        const highlightedExpr = this.highlightVariables(expr, inputValueMap);
+        const label = outputNode.label || outputNode.id;
+        expressions.push(`<span class="expr-output">${label}</span> = ${highlightedExpr}`);
+      }
+    }
+    return expressions.join('<br/>');
+  }
+
+  private highlightVariables(
+    expr: string,
+    inputValueMap: Map<string, 0 | 1>
+  ): string {
+    let result = expr;
+    const sortedNames = Array.from(inputValueMap.keys()).sort((a, b) => b.length - a.length);
+    for (const name of sortedNames) {
+      const value = inputValueMap.get(name);
+      const colorClass = value === 1 ? 'var-high' : 'var-low';
+      const regex = new RegExp(`(${name})(?![^<]*>)`, 'g');
+      result = result.replace(regex, `<span class="${colorClass}">$1</span>`);
+    }
+    return result;
   }
 
   onVerifyEquivalence(): void {
@@ -508,6 +623,28 @@ export class CompareViewComponent implements OnInit, OnChanges, OnDestroy {
     );
     this.highlightedA = diffIds.a;
     this.highlightedB = diffIds.b;
+  }
+
+  onPlaybackRowChange(event: { row: ComparisonResult; index: number }): void {
+    if (!this.snapshotA || !this.snapshotB) return;
+
+    event.row.inputCombination.forEach((input, i) => {
+      this.currentInputValues[i] = input.value as 0 | 1;
+    });
+    this.applyCurrentInputs();
+
+    const diffIds = this.equivalenceService.getDifferentOutputNodeIds(
+      this.snapshotA.nodes,
+      this.snapshotB.nodes,
+      event.row
+    );
+    this.highlightedA = diffIds.a;
+    this.highlightedB = diffIds.b;
+  }
+
+  onPlaybackStop(): void {
+    this.highlightedA = [];
+    this.highlightedB = [];
   }
 
   onExportReport(): void {

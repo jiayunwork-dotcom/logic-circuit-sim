@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EquivalenceResult, ComparisonResult } from '../../models/circuit.models';
@@ -65,9 +65,40 @@ import { EquivalenceResult, ComparisonResult } from '../../models/circuit.models
                 </label>
               </span>
             </h4>
+            <div class="playback-controls">
+              <button
+                class="btn-playback"
+                (click)="onStartPlayback()"
+                *ngIf="!isPlaying && !isPaused"
+                [disabled]="filteredResults.length === 0"
+              >
+                ▶️ 逐行回放
+              </button>
+              <button
+                class="btn-playback btn-pause"
+                (click)="onPausePlayback()"
+                *ngIf="isPlaying"
+              >
+                ⏸️ 暂停
+              </button>
+              <button
+                class="btn-playback btn-resume"
+                (click)="onResumePlayback()"
+                *ngIf="isPaused"
+              >
+                ▶️ 继续
+              </button>
+              <button
+                class="btn-playback btn-stop"
+                (click)="onStopPlayback()"
+                *ngIf="isPlaying || isPaused"
+              >
+                ⏹️ 停止
+              </button>
+            </div>
           </div>
 
-          <div class="table-container">
+          <div class="table-container" #tableContainer>
             <table *ngIf="filteredResults.length > 0">
               <thead>
                 <tr>
@@ -88,7 +119,9 @@ import { EquivalenceResult, ComparisonResult } from '../../models/circuit.models
                   *ngFor="let row of filteredResults; let i = index"
                   [class.different]="row.isDifferent"
                   [class.clickable]="row.isDifferent"
-                  (click)="onRowClick(row)"
+                  [class.current-playback]="currentPlaybackIndex === i"
+                  [class.flash-red]="isFlashing && currentPlaybackIndex === i && row.isDifferent"
+                  (click)="onRowClick(row, i)"
                 >
                   <td class="input-cell" *ngFor="let input of row.inputCombination">
                     {{ input.value }}
@@ -254,6 +287,52 @@ import { EquivalenceResult, ComparisonResult } from '../../models/circuit.models
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .playback-controls {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .btn-playback {
+      padding: 6px 12px;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      color: #333;
+      transition: all 0.2s;
+    }
+
+    .btn-playback:hover:not(:disabled) {
+      background: #f0f0f0;
+    }
+
+    .btn-playback:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-playback.btn-pause {
+      background: #FFF3E0;
+      border-color: #FFB74D;
+      color: #E65100;
+    }
+
+    .btn-playback.btn-resume {
+      background: #E8F5E9;
+      border-color: #81C784;
+      color: #2E7D32;
+    }
+
+    .btn-playback.btn-stop {
+      background: #FFEBEE;
+      border-color: #E57373;
+      color: #C62828;
     }
 
     .diff-filter {
@@ -336,6 +415,26 @@ import { EquivalenceResult, ComparisonResult } from '../../models/circuit.models
       background: #ffcdd2;
     }
 
+    tr.current-playback {
+      background: #FFF9C4 !important;
+      border-left: 3px solid #FF9800;
+    }
+
+    tr.flash-red td {
+      background: #f44336 !important;
+      color: #fff !important;
+      animation: flash-border 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes flash-border {
+      0% {
+        box-shadow: inset 0 0 0 2px #f44336;
+      }
+      100% {
+        box-shadow: inset 0 0 0 4px #b71c1c;
+      }
+    }
+
     tr.different td {
       background: inherit;
     }
@@ -387,16 +486,28 @@ import { EquivalenceResult, ComparisonResult } from '../../models/circuit.models
     `,
   ],
 })
-export class EquivalenceResultComponent implements OnInit {
+export class EquivalenceResultComponent implements OnInit, OnDestroy {
   @Input() result: EquivalenceResult | null = null;
   @Output() close = new EventEmitter<void>();
   @Output() rowClick = new EventEmitter<ComparisonResult>();
   @Output() exportReport = new EventEmitter<void>();
+  @Output() playbackRowChange = new EventEmitter<{ row: ComparisonResult; index: number }>();
+  @Output() playbackStop = new EventEmitter<void>();
+
+  @ViewChild('tableContainer') tableContainer!: ElementRef;
 
   showOnlyDiff = false;
   inputHeaders: string[] = [];
   outputAHeaders: string[] = [];
   outputBHeaders: string[] = [];
+
+  isPlaying = false;
+  isPaused = false;
+  currentPlaybackIndex = -1;
+  isFlashing = false;
+
+  private playbackTimer: any = null;
+  private flashTimer: any = null;
 
   ngOnInit(): void {
     if (this.result && this.result.results.length > 0) {
@@ -404,6 +515,21 @@ export class EquivalenceResultComponent implements OnInit {
       this.inputHeaders = firstRow.inputCombination.map((i) => i.name);
       this.outputAHeaders = firstRow.outputA.map((o) => o.name);
       this.outputBHeaders = firstRow.outputB.map((o) => o.name);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.clearTimers();
+  }
+
+  private clearTimers(): void {
+    if (this.playbackTimer) {
+      clearTimeout(this.playbackTimer);
+      this.playbackTimer = null;
+    }
+    if (this.flashTimer) {
+      clearInterval(this.flashTimer);
+      this.flashTimer = null;
     }
   }
 
@@ -421,9 +547,97 @@ export class EquivalenceResultComponent implements OnInit {
     return ((matched / this.result.totalCombinations) * 100).toFixed(1);
   }
 
-  onRowClick(row: ComparisonResult): void {
+  onRowClick(row: ComparisonResult, index?: number): void {
     if (row.isDifferent) {
       this.rowClick.emit(row);
+    }
+  }
+
+  onStartPlayback(): void {
+    if (this.filteredResults.length === 0) return;
+    this.isPlaying = true;
+    this.isPaused = false;
+    this.currentPlaybackIndex = -1;
+    this.showOnlyDiff = false;
+    this.playNextRow();
+  }
+
+  onPausePlayback(): void {
+    this.isPlaying = false;
+    this.isPaused = true;
+    this.clearTimers();
+  }
+
+  onResumePlayback(): void {
+    this.isPlaying = true;
+    this.isPaused = false;
+    this.playNextRow();
+  }
+
+  onStopPlayback(): void {
+    this.isPlaying = false;
+    this.isPaused = false;
+    this.currentPlaybackIndex = -1;
+    this.isFlashing = false;
+    this.clearTimers();
+    this.playbackStop.emit();
+  }
+
+  private playNextRow(): void {
+    if (!this.isPlaying) return;
+
+    const nextIndex = this.currentPlaybackIndex + 1;
+    if (nextIndex >= this.filteredResults.length) {
+      this.isPlaying = false;
+      this.isPaused = false;
+      return;
+    }
+
+    this.currentPlaybackIndex = nextIndex;
+    const row = this.filteredResults[nextIndex];
+    this.playbackRowChange.emit({ row, index: nextIndex });
+    this.scrollToCurrentRow();
+
+    if (row.isDifferent) {
+      this.startFlashing();
+      this.playbackTimer = setTimeout(() => {
+        this.stopFlashing();
+        this.playNextRow();
+      }, 3000);
+    } else {
+      this.playbackTimer = setTimeout(() => {
+        this.playNextRow();
+      }, 1500);
+    }
+  }
+
+  private startFlashing(): void {
+    this.isFlashing = true;
+    let flashCount = 0;
+    this.flashTimer = setInterval(() => {
+      this.isFlashing = !this.isFlashing;
+      flashCount++;
+      if (flashCount >= 6) {
+        this.stopFlashing();
+      }
+    }, 500);
+  }
+
+  private stopFlashing(): void {
+    if (this.flashTimer) {
+      clearInterval(this.flashTimer);
+      this.flashTimer = null;
+    }
+    this.isFlashing = false;
+  }
+
+  private scrollToCurrentRow(): void {
+    if (!this.tableContainer) return;
+    const container = this.tableContainer.nativeElement;
+    const rows = container.querySelectorAll('tbody tr');
+    const currentRow = rows[this.currentPlaybackIndex];
+    if (currentRow) {
+      currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
 
