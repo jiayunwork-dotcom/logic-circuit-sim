@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CircuitSnapshot, CircuitNode, Wire, ComparisonResult, EquivalenceResult } from '../../models/circuit.models';
@@ -13,7 +13,7 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
   standalone: true,
   imports: [CommonModule, FormsModule, ReadonlyCanvasComponent, EquivalenceResultComponent],
   template: `
-    <div class="compare-container">
+    <div class="compare-container" *ngIf="initialized">
       <div class="compare-header">
         <div class="header-title">
           <h2>⚖️ 电路对比模式</h2>
@@ -98,15 +98,25 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
         </div>
       </div>
     </div>
+
+    <div class="compare-container" *ngIf="!initialized">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#666;">
+        <p>正在加载对比数据...</p>
+      </div>
+    </div>
   `,
   styles: [
     `
     .compare-container {
       display: flex;
       flex-direction: column;
-      height: 100%;
-      width: 100%;
+      height: 100vh;
+      width: 100vw;
       background: #f0f0f0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 500;
     }
 
     .compare-header {
@@ -304,6 +314,7 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
       flex: 1;
       overflow: hidden;
       background: #fafafa;
+      min-height: 0;
     }
 
     .verifying-overlay {
@@ -349,7 +360,11 @@ import { EquivalenceResultComponent } from '../equivalence-result/equivalence-re
     `,
   ],
 })
-export class CompareViewComponent implements OnInit, OnDestroy {
+export class CompareViewComponent implements OnInit, OnChanges, OnDestroy {
+  @Input() snapshotIdA: string | null = null;
+  @Input() snapshotIdB: string | null = null;
+  @Output() exit = new EventEmitter<void>();
+
   snapshotA: CircuitSnapshot | null = null;
   snapshotB: CircuitSnapshot | null = null;
 
@@ -367,9 +382,7 @@ export class CompareViewComponent implements OnInit, OnDestroy {
   equivalenceResult: EquivalenceResult | null = null;
   verifying = false;
   totalCombinations = 0;
-
-  private exitCallback: (() => void) | null = null;
-  private snapshotIds: [string, string] | null = null;
+  initialized = false;
 
   constructor(
     private snapshotService: SnapshotService,
@@ -377,20 +390,34 @@ export class CompareViewComponent implements OnInit, OnDestroy {
     private booleanExpressionService: BooleanExpressionService
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.initializeFromIds();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['snapshotIdA'] || changes['snapshotIdB']) {
+      this.initializeFromIds();
+    }
+  }
 
   ngOnDestroy(): void {}
 
-  init(snapshotIds: [string, string], onExit: () => void): boolean {
-    const snapA = this.snapshotService.getSnapshot(snapshotIds[0]);
-    const snapB = this.snapshotService.getSnapshot(snapshotIds[1]);
+  private initializeFromIds(): void {
+    if (!this.snapshotIdA || !this.snapshotIdB) {
+      this.initialized = false;
+      return;
+    }
 
-    if (!snapA || !snapB) return false;
+    const snapA = this.snapshotService.getSnapshot(this.snapshotIdA);
+    const snapB = this.snapshotService.getSnapshot(this.snapshotIdB);
+
+    if (!snapA || !snapB) {
+      this.initialized = false;
+      return;
+    }
 
     this.snapshotA = snapA;
     this.snapshotB = snapB;
-    this.snapshotIds = snapshotIds;
-    this.exitCallback = onExit;
 
     const inputsA = snapA.nodes.filter((n) => n.type === 'INPUT');
     const inputsB = snapB.nodes.filter((n) => n.type === 'INPUT');
@@ -405,7 +432,7 @@ export class CompareViewComponent implements OnInit, OnDestroy {
     }
 
     this.applyCurrentInputs();
-    return true;
+    this.initialized = true;
   }
 
   toggleInput(index: number): void {
@@ -566,8 +593,6 @@ export class CompareViewComponent implements OnInit, OnDestroy {
   }
 
   onExit(): void {
-    if (this.exitCallback) {
-      this.exitCallback();
-    }
+    this.exit.emit();
   }
 }

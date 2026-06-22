@@ -36,11 +36,15 @@ import { ReadonlyCanvasComponent } from '../readonly-canvas/readonly-canvas.comp
             </div>
 
             <div class="snapshot-main">
-              <div class="snapshot-header-row">
+              <div
+                class="snapshot-header-row"
+                (click)="togglePreview(snapshot.id)"
+                style="cursor:pointer;"
+              >
                 <div *ngIf="renamingId !== snapshot.id" class="snapshot-name">
-                  {{ snapshot.name }}
+                  {{ snapshot.name }} <span class="preview-hint">[点击预览]</span>
                 </div>
-                <div *ngIf="renamingId === snapshot.id" class="rename-input">
+                <div *ngIf="renamingId === snapshot.id" class="rename-input" (click)="$event.stopPropagation()">
                   <input
                     #renameInput
                     type="text"
@@ -250,6 +254,12 @@ import { ReadonlyCanvasComponent } from '../readonly-canvas/readonly-canvas.comp
       color: #333;
       font-size: 14px;
       word-break: break-all;
+    }
+
+    .preview-hint {
+      font-size: 11px;
+      color: #2196F3;
+      font-weight: normal;
     }
 
     .rename-input input {

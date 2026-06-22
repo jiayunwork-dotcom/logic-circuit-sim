@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../../models/circuit.models';
 
@@ -152,6 +152,12 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
   `,
   styles: [
     `
+    :host {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
     .readonly-canvas-container {
       position: relative;
       overflow: hidden;
@@ -195,7 +201,7 @@ import { CircuitNode, Wire, Port, SignalValue, GateType, ViewState } from '../..
     `,
   ],
 })
-export class ReadonlyCanvasComponent implements OnInit, OnChanges {
+export class ReadonlyCanvasComponent implements OnInit, OnChanges, AfterViewInit {
   @Input() nodes: CircuitNode[] = [];
   @Input() wires: Wire[] = [];
   @Input() isThumbnail = false;
@@ -214,6 +220,14 @@ export class ReadonlyCanvasComponent implements OnInit, OnChanges {
     if (this.autoFit) {
       this.calculateAutoFit();
     }
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      if (this.autoFit) {
+        this.calculateAutoFit();
+      }
+    }, 0);
   }
 
   ngOnChanges(changes: SimpleChanges): void {

@@ -47,7 +47,7 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
     EquivalenceService,
   ],
   template: `
-    <ng-container *ngIf="!isCompareMode; else compareViewTpl">
+    <ng-container *ngIf="!isCompareMode">
       <div class="app-container">
         <header class="app-header">
           <div class="header-left">
@@ -166,9 +166,12 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
       </div>
     </ng-container>
 
-    <ng-template #compareViewTpl>
-      <app-compare-view></app-compare-view>
-    </ng-template>
+    <app-compare-view
+      *ngIf="isCompareMode"
+      [snapshotIdA]="compareSnapshotIdA"
+      [snapshotIdB]="compareSnapshotIdB"
+      (exit)="onExitCompare()"
+    ></app-compare-view>
   `,
   styles: [
     `
@@ -360,7 +363,6 @@ import { TruthTableRow, Level, CircuitNode } from './models/circuit.models';
 export class AppComponent implements OnInit {
   @ViewChild('fileInput') fileInput: any;
   @ViewChild(LevelPanelComponent) levelPanel!: LevelPanelComponent;
-  @ViewChild(CompareViewComponent) compareView!: CompareViewComponent;
 
   showTruthTable = false;
   showKMap = false;
@@ -368,6 +370,8 @@ export class AppComponent implements OnInit {
   showSnapshotPanel = false;
   showInfo = true;
   isCompareMode = false;
+  compareSnapshotIdA: string | null = null;
+  compareSnapshotIdB: string | null = null;
   truthTableRows: TruthTableRow[] = [];
   highlightRows: number[] = [];
   canUndo = false;
@@ -504,19 +508,15 @@ export class AppComponent implements OnInit {
 
   onStartCompare(snapshotIds: [string, string]): void {
     this.showSnapshotPanel = false;
+    this.compareSnapshotIdA = snapshotIds[0];
+    this.compareSnapshotIdB = snapshotIds[1];
     this.isCompareMode = true;
+  }
 
-    setTimeout(() => {
-      if (this.compareView) {
-        const success = this.compareView.init(snapshotIds, () => {
-          this.isCompareMode = false;
-        });
-        if (!success) {
-          alert('无法加载快照进行对比');
-          this.isCompareMode = false;
-        }
-      }
-    }, 50);
+  onExitCompare(): void {
+    this.isCompareMode = false;
+    this.compareSnapshotIdA = null;
+    this.compareSnapshotIdB = null;
   }
 
   onSaveLocal(): void {

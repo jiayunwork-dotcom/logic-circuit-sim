@@ -13,6 +13,203 @@ export class SnapshotService {
 
   constructor(private circuitService: CircuitService) {
     this.loadSnapshotsFromStorage();
+    if (this.snapshotsSubject.value.length === 0) {
+      this.createDemoSnapshots();
+    }
+  }
+
+  private createDemoSnapshots(): void {
+    const demos = [
+      this.createAndGateSnapshot(),
+      this.createNandNotSnapshot(),
+    ];
+    this.snapshotsSubject.next(demos);
+    this.saveSnapshotsToStorage();
+  }
+
+  private createAndGateSnapshot(): CircuitSnapshot {
+    const baseY = 120;
+    const x1 = 80, x2 = 300, x3 = 520;
+    const yA = baseY, yB = baseY + 100, yY = baseY + 50;
+
+    const nodeInputA = {
+      id: 'demo1_inA', type: 'INPUT' as const,
+      position: { x: x1, y: yA }, label: 'A', value: 0 as const,
+      inputPorts: [],
+      outputPorts: [{ id: 'demo1_inA_out', type: 'output' as const, nodeId: 'demo1_inA', index: 0, value: 0 as const, position: { x: 60, y: 20 } }],
+      delay: 0,
+    };
+
+    const nodeInputB = {
+      id: 'demo1_inB', type: 'INPUT' as const,
+      position: { x: x1, y: yB }, label: 'B', value: 0 as const,
+      inputPorts: [],
+      outputPorts: [{ id: 'demo1_inB_out', type: 'output' as const, nodeId: 'demo1_inB', index: 0, value: 0 as const, position: { x: 60, y: 20 } }],
+      delay: 0,
+    };
+
+    const nodeAnd = {
+      id: 'demo1_and', type: 'AND' as const,
+      position: { x: x2, y: yY - 10 }, label: '', value: 0 as const,
+      inputPorts: [
+        { id: 'demo1_and_in0', type: 'input' as const, nodeId: 'demo1_and', index: 0, value: null, position: { x: 0, y: 15 } },
+        { id: 'demo1_and_in1', type: 'input' as const, nodeId: 'demo1_and', index: 1, value: null, position: { x: 0, y: 45 } },
+      ],
+      outputPorts: [{ id: 'demo1_and_out', type: 'output' as const, nodeId: 'demo1_and', index: 0, value: 0 as const, position: { x: 80, y: 30 } }],
+      delay: 0,
+    };
+
+    const nodeOutput = {
+      id: 'demo1_out', type: 'OUTPUT' as const,
+      position: { x: x3, y: yY }, label: 'Y', value: 0 as const,
+      inputPorts: [{ id: 'demo1_out_in', type: 'input' as const, nodeId: 'demo1_out', index: 0, value: null, position: { x: 0, y: 20 } }],
+      outputPorts: [],
+      delay: 0,
+    };
+
+    const wire1 = {
+      id: 'demo1_w1',
+      fromNodeId: 'demo1_inA', fromPortId: 'demo1_inA_out',
+      toNodeId: 'demo1_and', toPortId: 'demo1_and_in0',
+      points: [
+        { x: x1 + 60, y: yA + 20 },
+        { x: x2, y: yY - 10 + 15 },
+      ],
+      value: 0 as 0,
+    };
+
+    const wire2 = {
+      id: 'demo1_w2',
+      fromNodeId: 'demo1_inB', fromPortId: 'demo1_inB_out',
+      toNodeId: 'demo1_and', toPortId: 'demo1_and_in1',
+      points: [
+        { x: x1 + 60, y: yB + 20 },
+        { x: x2, y: yY - 10 + 45 },
+      ],
+      value: 0 as 0,
+    };
+
+    const wire3 = {
+      id: 'demo1_w3',
+      fromNodeId: 'demo1_and', fromPortId: 'demo1_and_out',
+      toNodeId: 'demo1_out', toPortId: 'demo1_out_in',
+      points: [
+        { x: x2 + 80, y: yY - 10 + 30 },
+        { x: x3, y: yY + 20 },
+      ],
+      value: 0 as 0,
+    };
+
+    return {
+      id: 'demo_snap_1',
+      name: '电路A - A与B',
+      createdAt: new Date().toISOString(),
+      nodes: [nodeInputA, nodeInputB, nodeAnd, nodeOutput],
+      wires: [wire1, wire2, wire3],
+    };
+  }
+
+  private createNandNotSnapshot(): CircuitSnapshot {
+    const baseY = 120;
+    const x1 = 80, x2 = 280, x3 = 420, x4 = 560;
+    const yA = baseY, yB = baseY + 100, yM = baseY + 50, yY = baseY + 50;
+
+    const nodeInputA = {
+      id: 'demo2_inA', type: 'INPUT' as const,
+      position: { x: x1, y: yA }, label: 'A', value: 0 as const,
+      inputPorts: [],
+      outputPorts: [{ id: 'demo2_inA_out', type: 'output' as const, nodeId: 'demo2_inA', index: 0, value: 0 as const, position: { x: 60, y: 20 } }],
+      delay: 0,
+    };
+
+    const nodeInputB = {
+      id: 'demo2_inB', type: 'INPUT' as const,
+      position: { x: x1, y: yB }, label: 'B', value: 0 as const,
+      inputPorts: [],
+      outputPorts: [{ id: 'demo2_inB_out', type: 'output' as const, nodeId: 'demo2_inB', index: 0, value: 0 as const, position: { x: 60, y: 20 } }],
+      delay: 0,
+    };
+
+    const nodeNand = {
+      id: 'demo2_nand', type: 'NAND' as const,
+      position: { x: x2, y: yM - 10 }, label: '', value: 0 as const,
+      inputPorts: [
+        { id: 'demo2_nand_in0', type: 'input' as const, nodeId: 'demo2_nand', index: 0, value: null, position: { x: 0, y: 15 } },
+        { id: 'demo2_nand_in1', type: 'input' as const, nodeId: 'demo2_nand', index: 1, value: null, position: { x: 0, y: 45 } },
+      ],
+      outputPorts: [{ id: 'demo2_nand_out', type: 'output' as const, nodeId: 'demo2_nand', index: 0, value: 0 as const, position: { x: 80, y: 30 } }],
+      delay: 0,
+    };
+
+    const nodeNot = {
+      id: 'demo2_not', type: 'NOT' as const,
+      position: { x: x3, y: yY }, label: '', value: 0 as const,
+      inputPorts: [
+        { id: 'demo2_not_in0', type: 'input' as const, nodeId: 'demo2_not', index: 0, value: null, position: { x: 0, y: 20 } },
+      ],
+      outputPorts: [{ id: 'demo2_not_out', type: 'output' as const, nodeId: 'demo2_not', index: 0, value: 0 as const, position: { x: 70, y: 20 } }],
+      delay: 0,
+    };
+
+    const nodeOutput = {
+      id: 'demo2_out', type: 'OUTPUT' as const,
+      position: { x: x4, y: yY }, label: 'Y', value: 0 as const,
+      inputPorts: [{ id: 'demo2_out_in', type: 'input' as const, nodeId: 'demo2_out', index: 0, value: null, position: { x: 0, y: 20 } }],
+      outputPorts: [],
+      delay: 0,
+    };
+
+    const wire1 = {
+      id: 'demo2_w1',
+      fromNodeId: 'demo2_inA', fromPortId: 'demo2_inA_out',
+      toNodeId: 'demo2_nand', toPortId: 'demo2_nand_in0',
+      points: [
+        { x: x1 + 60, y: yA + 20 },
+        { x: x2, y: yM - 10 + 15 },
+      ],
+      value: 0 as 0,
+    };
+
+    const wire2 = {
+      id: 'demo2_w2',
+      fromNodeId: 'demo2_inB', fromPortId: 'demo2_inB_out',
+      toNodeId: 'demo2_nand', toPortId: 'demo2_nand_in1',
+      points: [
+        { x: x1 + 60, y: yB + 20 },
+        { x: x2, y: yM - 10 + 45 },
+      ],
+      value: 0 as 0,
+    };
+
+    const wire3 = {
+      id: 'demo2_w3',
+      fromNodeId: 'demo2_nand', fromPortId: 'demo2_nand_out',
+      toNodeId: 'demo2_not', toPortId: 'demo2_not_in0',
+      points: [
+        { x: x2 + 80, y: yM - 10 + 30 },
+        { x: x3, y: yY + 20 },
+      ],
+      value: 0 as 0,
+    };
+
+    const wire4 = {
+      id: 'demo2_w4',
+      fromNodeId: 'demo2_not', fromPortId: 'demo2_not_out',
+      toNodeId: 'demo2_out', toPortId: 'demo2_out_in',
+      points: [
+        { x: x3 + 70, y: yY + 20 },
+        { x: x4, y: yY + 20 },
+      ],
+      value: 0 as 0,
+    };
+
+    return {
+      id: 'demo_snap_2',
+      name: '电路B - (A与非B)非 = A与B',
+      createdAt: new Date(Date.now() - 1000).toISOString(),
+      nodes: [nodeInputA, nodeInputB, nodeNand, nodeNot, nodeOutput],
+      wires: [wire1, wire2, wire3, wire4],
+    };
   }
 
   get snapshots(): CircuitSnapshot[] {
